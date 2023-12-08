@@ -4,10 +4,11 @@ import { AngularFireAuth } from '@angular/fire/compat/auth';
 @Component({
   selector: 'app-signup',
   templateUrl: './signup.component.html',
-  styleUrls: ['./signup.component.css']
+  styleUrls: ['./signup.component.scss']
 })
 export class SignupComponent {
-  constructor(public afAuth: AngularFireAuth) { }
+
+  constructor(private afAuth: AngularFireAuth) { }
 
   signUp(email: string, password: string) {
     this.afAuth.createUserWithEmailAndPassword(email, password)
