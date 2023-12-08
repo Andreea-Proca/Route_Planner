@@ -19,10 +19,11 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 
 import { FlexLayoutModule } from '@angular/flex-layout';
+import { LoginComponent } from './login/login.component';
 
 
 @NgModule({
-  declarations: [AppComponent, EsriMapComponent],
+  declarations: [AppComponent, EsriMapComponent, LoginComponent],
   imports: [
     BrowserModule,
     AppRoutingModule,
