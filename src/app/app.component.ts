@@ -15,17 +15,17 @@ interface ITab {
 export class AppComponent {
 
   tabs: ITab[] = [{
-    name: 'Home',
-    link: '/home'
+    name: 'Dashboard',
+    link: '/dashboard'
   }, {
     name: 'Map',
     link: '/map'
   }, {
-    name: 'Login',
-    link: '/login'
+    name: 'Sign In',
+    link: '/sign-in'
   }, {
     name: 'Sign Up',
-    link: '/signup'
+    link: '/sign-up'
   }];
 
   activeTab = this.tabs[0].link;

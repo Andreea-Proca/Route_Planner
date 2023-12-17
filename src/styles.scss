@@ -4,8 +4,17 @@
 
 @import "~@arcgis/core/assets/esri/css/main.css";
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+// html, body { height: 100%; }
+// body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+// html, body { height: 100%; }
+// body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+body {
+    margin: 0;
+    padding: 0;
+    background-image: url('https://dm3z1jexb3zz4.cloudfront.net/public/images/core/sales-route-planner-dynamics-365.png?mtime=20230718152125');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}

@@ -19,15 +19,23 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatListModule } from '@angular/material/list';
 
 import { FlexLayoutModule } from '@angular/flex-layout';
-import { LoginComponent } from './pages/login/login.component';
-import { AngularFireAuth, AngularFireAuthModule } from "@angular/fire/compat/auth";
-import { SignupComponent } from './pages/signup/signup.component';
-
+import { AngularFireAuthModule } from "@angular/fire/compat/auth";
+import { AngularFirestoreModule } from "@angular/fire/compat/firestore";
+import { AngularFireStorageModule } from "@angular/fire/compat/storage";
+import { DashboardComponent } from './pages/dashboard/dashboard.component';
+import { SignInComponent } from './pages/sign-in/sign-in.component';
+import { SignUpComponent } from './pages/sign-up/sign-up.component';
+import { ForgotPasswordComponent } from './pages/forgot-password/forgot-password.component';
+import { VerifyEmailComponent } from './pages/verify-email/verify-email.component';
+import { AuthService } from "./services/auth";
+import { ReactiveFormsModule } from "@angular/forms";
+import { MaterialModule } from './material-module';
 
 @NgModule({
-  declarations: [AppComponent, EsriMapComponent, LoginComponent, SignupComponent],
+  declarations: [AppComponent, EsriMapComponent, DashboardComponent, SignInComponent, SignUpComponent, ForgotPasswordComponent, VerifyEmailComponent],
   imports: [
     BrowserModule,
+    ReactiveFormsModule,
     AppRoutingModule,
     BrowserAnimationsModule,
     MatTabsModule,
@@ -36,12 +44,16 @@ import { SignupComponent } from './pages/signup/signup.component';
     MatListModule,
     FlexLayoutModule,
     AngularFireModule.initializeApp(environment.firebase, 'AngularDemoArcGIS'),
+    AngularFireAuthModule,
+    AngularFirestoreModule,
+    AngularFireStorageModule,
     AngularFireDatabaseModule,
-    AngularFireAuthModule
+    MaterialModule
   ],
   providers: [
     FirebaseService,
-    FirebaseMockService
+    FirebaseMockService,
+    AuthService
   ],
   bootstrap: [AppComponent]
 })

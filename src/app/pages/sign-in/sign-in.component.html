@@ -1,0 +1,22 @@
+<form [formGroup]="signinForm" class="signin-form">
+    <mat-card class="signin-card">
+        <mat-form-field appearance="fill" class="signin-field">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="email" placeholder="Email">
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="signin-field">
+            <mat-label>Password</mat-label>
+            <input matInput type="password" formControlName="password" placeholder="Password">
+        </mat-form-field>
+
+        <div class="actions">
+            <button mat-raised-button color="primary" (click)="signin()">Sign In</button>
+            <a mat-button routerLink="/forgot-password">Forgot Password?</a>
+        </div>
+
+        <div class="account-link">
+            <a mat-button routerLink="/sign-up">Don't have an account?</a>
+        </div>
+    </mat-card>
+</form>
