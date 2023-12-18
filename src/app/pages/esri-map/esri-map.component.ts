@@ -35,6 +35,9 @@ import Point from '@arcgis/core/geometry/Point';
 
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 
+import Search from '@arcgis/core/widgets/Search';
+import LocatorSearchSource from '@arcgis/core/widgets/Search/LocatorSearchSource';
+
 @Component({
   selector: "app-esri-map",
   templateUrl: "./esri-map.component.html",
@@ -64,6 +67,8 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   isConnected: boolean = false;
   subscriptionList: Subscription;
   subscriptionObj: Subscription;
+
+  searchWidget: Search;
 
   constructor(
     private fbs: FirebaseService
@@ -96,6 +101,37 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       };
 
       this.view = new MapView(mapViewProperties);
+
+      // Initialize the Search widget
+      this.searchWidget = new Search({
+        view: this.view,
+        includeDefaultSources: false,
+        sources: [
+          new LocatorSearchSource({
+            locator: {
+              url: "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"
+            },
+            singleLineFieldName: "SingleLine",
+            outFields: ["Addr_type"],
+            name: "Custom Geocoding Service",
+            placeholder: "Search for a location",
+            maxResults: 3,
+            maxSuggestions: 6,
+            suggestionsEnabled: true,
+            minSuggestCharacters: 0
+          } as __esri.LocatorSearchSourceProperties) // Use __esri.LocatorSearchSourceProperties
+        ]
+      });
+
+      this.view.ui.add(this.searchWidget, {
+        position: "top-right",
+        index: 2
+      });
+
+      this.view.when(() => {
+        console.log("ArcGIS map loaded");
+        console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
+      });
 
       // Fires `pointer-move` event when user clicks on "Shift"
       // key and moves the pointer on the view.
