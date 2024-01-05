@@ -24,7 +24,7 @@ import esri = __esri; // Esri TypeScript Types
 import { Subscription } from "rxjs";
 import { FirebaseService, ITestItem } from "src/app/services/database/firebase";
 import { FirebaseMockService } from "src/app/services/database/firebase-mock";
-
+import { getAuth } from "firebase/auth";
 import Config from '@arcgis/core/config';
 import WebMap from '@arcgis/core/WebMap';
 import MapView from '@arcgis/core/views/MapView';
@@ -52,6 +52,8 @@ import * as locator from "@arcgis/core/rest/locator.js";
 import PictureMarkerSymbol from '@arcgis/core/symbols/PictureMarkerSymbol';
 import WebStyleSymbol from '@arcgis/core/symbols/WebStyleSymbol';
 import ActionButton from '@arcgis/core/support/actions/ActionButton.js';
+import { AuthService } from "src/app/services/auth";
+// const auth = getAuth();
 
 @Component({
   selector: "app-esri-map",
@@ -68,6 +70,12 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   pointGraphic: esri.Graphic;
   graphicsLayer: esri.GraphicsLayer;
 
+  dropDownElement: HTMLElement;
+
+  // Current route
+  startPoint: Point;
+  destinationPoint: Point;
+
   // Attributes
   zoom = 10;
   center: Array<number> = [-118.73682450024377, 34.07817583063242];
@@ -77,6 +85,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   dir: number = 0;
   count: number = 0;
   timeoutHandler = null;
+
 
   // firebase sync
   isConnected: boolean = false;
@@ -90,8 +99,8 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   locatorWidget: locator;
 
   constructor(
+    private authService: AuthService,
     private fbs: FirebaseService
-    //private fbs: FirebaseMockService
   ) { }
 
   async initializeMap() {
@@ -101,6 +110,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       const mapProperties: esri.WebMapProperties = {
         basemap: this.basemap
       };
+      console.log("aici")
 
       Config.apiKey = "AAPKba863a01015c4ac0abf7e38b281f64604o_R5CzYPymg8lQ_DGiRpc00YTXy2pGxe7YsZUU3LmcxW9xrS0eQgEzDywhaJeiP";
 
@@ -108,6 +118,8 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
       this.addFeatureLayers();
       this.addGraphicLayers();
+
+      this.dropDownElement = document.getElementById("routes");
 
 
       this.addPoint(this.pointCoords[1], this.pointCoords[0], true);
@@ -311,14 +323,18 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
     this.view.on("click", (event) => {
       console.log("point clicked: ", event.mapPoint.latitude, event.mapPoint.longitude);
+      console.log(this.view.graphics.length);
       if (this.view.graphics.length === 0) {
         addGraphic("origin", event.mapPoint);
+        this.startPoint = new Point(event.mapPoint);
       } else if (this.view.graphics.length === 1) {
         addGraphic("destination", event.mapPoint);
+        this.destinationPoint = new Point(event.mapPoint);
         getRoute(); // Call the route service
       } else {
         this.view.graphics.removeAll();
         addGraphic("origin", event.mapPoint);
+        this.startPoint = new Point(event.mapPoint);
       }
     });
 
@@ -449,6 +465,28 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this.fbs.addPointItem(this.view.center.latitude, this.view.center.longitude);
   }
 
+  addRouteItem() {
+    
+    console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
+    if (this.startPoint !== null && this.destinationPoint !== null) {
+      this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude,this.destinationPoint.latitude, this.destinationPoint.longitude, "traseu1");
+      const newRoute = document.createElement("option");
+      const routePoints = {
+        lat1: this.startPoint.latitude,
+        lng1: this.startPoint.longitude,
+        lat2: this.destinationPoint.latitude,
+        lng2: this.destinationPoint.longitude
+      };
+      newRoute.text = "traseu1"
+      newRoute.value = JSON.stringify(routePoints);
+      this.dropDownElement.appendChild(newRoute);
+    }
+    
+    console.log("aici");
+    console.log(getAuth());
+    // console.log(this.fbs.getChangeFeedList());
+  }
+
   disconnectFirebase() {
     if (this.subscriptionList != null) {
       this.subscriptionList.unsubscribe();
@@ -461,11 +499,12 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   ngOnInit() {
     // Initialize MapView and return an instance of MapView
     console.log("initializing map");
+    console.log(this.authService);
     this.initializeMap().then(() => {
       // The map has been initialized
       console.log("mapView ready: ", this.view.ready);
       this.loaded = this.view.ready;
-      this.runTimer();
+      //this.runTimer();
     });
   }
 
@@ -474,7 +513,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       // destroy the map view
       this.view.container = null;
     }
-    this.stopTimer();
+   // this.stopTimer();
     this.disconnectFirebase();
   }
 
