@@ -38,6 +38,21 @@ import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 import RouteParameters from '@arcgis/core/rest/support/RouteParameters';
 import * as route from "@arcgis/core/rest/route.js";
 
+import Search from '@arcgis/core/widgets/Search.js';
+import Locate from "@arcgis/core/widgets/Locate.js";
+import Compass from "@arcgis/core/widgets/Compass.js";
+import Fullscreen from "@arcgis/core/widgets/Fullscreen.js";
+
+
+import { geocode } from "@esri/arcgis-rest-geocoding"
+import { ApiKeyManager } from "@esri/arcgis-rest-request";
+import { getCategories } from "@esri/arcgis-rest-places";
+import { findPlacesWithinExtent } from "@esri/arcgis-rest-places";
+import * as locator from "@arcgis/core/rest/locator.js";
+import PictureMarkerSymbol from '@arcgis/core/symbols/PictureMarkerSymbol';
+import WebStyleSymbol from '@arcgis/core/symbols/WebStyleSymbol';
+import ActionButton from '@arcgis/core/support/actions/ActionButton.js';
+
 @Component({
   selector: "app-esri-map",
   templateUrl: "./esri-map.component.html",
@@ -69,6 +84,10 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   subscriptionObj: Subscription;
 
   searchWidget: Search;
+  locateWidget: Locate;
+  compassWidget: Compass;
+  fullscreenWidget: Fullscreen;
+  locatorWidget: locator;
 
   constructor(
     private fbs: FirebaseService
@@ -105,29 +124,50 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
       // Initialize the Search widget
       this.searchWidget = new Search({
-        view: this.view,
-        includeDefaultSources: false,
-        sources: [
-          new LocatorSearchSource({
-            locator: {
-              url: "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer"
-            },
-            singleLineFieldName: "SingleLine",
-            outFields: ["Addr_type"],
-            name: "Custom Geocoding Service",
-            placeholder: "Search for a location",
-            maxResults: 3,
-            maxSuggestions: 6,
-            suggestionsEnabled: true,
-            minSuggestCharacters: 0
-          } as __esri.LocatorSearchSourceProperties) // Use __esri.LocatorSearchSourceProperties
-        ]
+        view: this.view
+      });
+      this.view.ui.add(this.searchWidget, {
+        position: "bottom-right",
+        index: 1
       });
 
-      this.view.ui.add(this.searchWidget, {
-        position: "top-right",
+      this.locateWidget = new Locate({
+        view: this.view,   // Attaches the Locate button to the view
+        // graphic: new Graphic({
+        //   symbol: { type: "simple-marker" }  // overwrites the default symbol used for the
+        //   // graphic placed at the location of the user when found
+        // })
+      });
+      this.view.ui.add(this.locateWidget, {
+        position: "top-left",
+        index: 0
+      });
+
+      this.compassWidget = new Compass({
+        view: this.view
+      });
+      this.view.ui.add(this.compassWidget, {
+        position: "top-left",
         index: 2
       });
+
+      this.fullscreenWidget = new Fullscreen({
+        view: this.view
+      });
+      this.view.ui.add(this.fullscreenWidget, {
+        position: "top-left",
+        index: 0
+      });
+
+
+      this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/park.png", "park", "park");
+      this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/mountain.png", "mountain", "mountain");
+      this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/trail.png", "trail", "trail");
+      this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/campground.png","campground", "campground");
+      this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/landmark.png", "Tourist Attraction", "landmark");
+      this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/train-station.png", "train station", "train-station");
+      this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/grocery-store.png", "grocery", "grocery-store");
+
 
       this.view.when(() => {
         console.log("ArcGIS map loaded");
@@ -149,6 +189,26 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.log("EsriLoader: ", error);
     }
+  }
+
+
+  findPlaces(pt,  category: string, icon: string) {
+    const geocodingServiceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
+
+    const params = {
+      address: null,
+      categories: [category],
+      location: pt,  // Paris (2.34602,48.85880)
+      outFields: ["PlaceName", "Place_addr"]
+    }
+
+    locator.addressToLocations(geocodingServiceUrl, params).then((results) => {
+      for (let item of results) {
+        this.addIcon(item.location.latitude, item.location.longitude, true, icon)
+      }
+      //   this.addPoint(48.85877, 2.34612);
+      console.log(results)
+    });
   }
 
   addGraphicLayers() {
@@ -215,6 +275,36 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     }
   }
 
+  addIcon(lat: number, lng: number, register: boolean, category: string) {
+    const point = new Point({
+      longitude: lng,
+      latitude: lat
+    });
+  
+    const webStyleSymbol = new WebStyleSymbol({
+      name: category,
+      styleName: "Esri2DPointSymbolsStyle"
+    });
+
+    const pointGraphic = new Graphic({
+      geometry: point,
+      symbol: webStyleSymbol
+    });
+  
+    this.graphicsLayer.add(pointGraphic);
+  
+    if (register) {
+      this.pointGraphic = pointGraphic;
+    }
+  }  
+
+  buttonFunc(url: string, category: string, icon: string) {
+    const button = document.createElement('button');
+    button.innerHTML = `<img src=${url} alt="Icon" />`;
+    button.className = 'esri-widget--button esri-widget esri-interactive';
+    button.addEventListener('click', () => { this.findPlaces(this.view.center, category, icon); });
+    this.view.ui.add(button, 'top-left');
+  }
 
   addRouter() {
     const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
