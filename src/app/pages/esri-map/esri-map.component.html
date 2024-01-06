@@ -20,7 +20,7 @@
             </mat-list-item>
             <mat-divider></mat-divider>
             <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)=" addRouteItem()">Save route</button>
+                <button mat-button mat-button color="primary" class="full-w" (click)="addRouteItem()">Save route</button>
             </mat-list-item>
             <mat-list-item>
                 <label for="cars">Choose a car:</label>
@@ -30,6 +30,9 @@
                     <option value="mercedes">Mercedes</option>
                     <option value="audi">Audi</option>
                 </select>
+            </mat-list-item>
+            <mat-list-item>
+                <button mat-button mat-button color="primary" class="full-w" (click)="showRouteFromDropdown()">Show selected route</button>
             </mat-list-item>
         </mat-list>
     </div>

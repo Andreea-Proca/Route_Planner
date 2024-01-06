@@ -53,7 +53,8 @@ import PictureMarkerSymbol from '@arcgis/core/symbols/PictureMarkerSymbol';
 import WebStyleSymbol from '@arcgis/core/symbols/WebStyleSymbol';
 import ActionButton from '@arcgis/core/support/actions/ActionButton.js';
 import { AuthService } from "src/app/services/auth";
-// const auth = getAuth();
+import Popup from "@arcgis/core/widgets/Popup.js";
+
 
 @Component({
   selector: "app-esri-map",
@@ -175,7 +176,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/park.png", "park", "park");
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/mountain.png", "mountain", "mountain");
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/trail.png", "trail", "trail");
-      this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/campground.png","campground", "campground");
+      this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/campground.png", "campground", "campground");
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/landmark.png", "Tourist Attraction", "landmark");
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/train-station.png", "train station", "train-station");
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/grocery-store.png", "grocery", "grocery-store");
@@ -204,7 +205,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   }
 
 
-  findPlaces(pt,  category: string, icon: string) {
+  findPlaces(pt, category: string, icon: string) {
     const geocodingServiceUrl = "http://geocode-api.arcgis.com/arcgis/rest/services/World/GeocodeServer";
 
     const params = {
@@ -292,7 +293,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       longitude: lng,
       latitude: lat
     });
-  
+
     const webStyleSymbol = new WebStyleSymbol({
       name: category,
       styleName: "Esri2DPointSymbolsStyle"
@@ -302,20 +303,42 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       geometry: point,
       symbol: webStyleSymbol
     });
-  
+
     this.graphicsLayer.add(pointGraphic);
-  
+
     if (register) {
       this.pointGraphic = pointGraphic;
     }
-  }  
+  }
 
   buttonFunc(url: string, category: string, icon: string) {
     const button = document.createElement('button');
     button.innerHTML = `<img src=${url} alt="Icon" />`;
     button.className = 'esri-widget--button esri-widget esri-interactive';
+
     button.addEventListener('click', () => { this.findPlaces(this.view.center, category, icon); });
     this.view.ui.add(button, 'top-left');
+
+    button.addEventListener('mouseover', () => {
+      var rect = button.getBoundingClientRect();
+
+      var x = rect.left + rect.width / 2;
+      var y = rect.top + rect.height / 2;
+      var screenPoint = {
+        x: x,
+        y: y,
+        // spatialReference: this.view.spatialReference
+      };
+      var mapPoint = this.view.toMap(screenPoint);
+
+      this.view.openPopup({
+        title: category,
+        content: `<div>Click here to see ${category} in this area.</div>`,
+        location: mapPoint
+      });
+    });
+
+    button.addEventListener('mouseout', () => { this.view.closePopup(); });
   }
 
   addRouter() {
@@ -400,40 +423,11 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this.timeoutHandler = setTimeout(() => {
       // code to execute continuously until the view is closed
       // ...
-      this.animatePointDemo();
+      //this.animatePointDemo();
       this.runTimer();
     }, 200);
   }
 
-  animatePointDemo() {
-    this.removePoint();
-    switch (this.dir) {
-      case 0:
-        this.pointCoords[1] += 0.01;
-        break;
-      case 1:
-        this.pointCoords[0] += 0.02;
-        break;
-      case 2:
-        this.pointCoords[1] -= 0.01;
-        break;
-      case 3:
-        this.pointCoords[0] -= 0.02;
-        break;
-    }
-
-    this.count += 1;
-    if (this.count >= 10) {
-      this.count = 0;
-      this.dir += 1;
-      if (this.dir > 3) {
-        this.dir = 0;
-      }
-    }
-
-    this.addPoint(this.pointCoords[1], this.pointCoords[0], true);
-    this.fbs.syncPointItem(this.pointCoords[1], this.pointCoords[0]);
-  }
 
   stopTimer() {
     if (this.timeoutHandler != null) {
@@ -466,10 +460,9 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   }
 
   addRouteItem() {
-    
     console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
     if (this.startPoint !== null && this.destinationPoint !== null) {
-      this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude,this.destinationPoint.latitude, this.destinationPoint.longitude, "traseu1");
+      this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude, this.destinationPoint.latitude, this.destinationPoint.longitude, "traseu1");
       const newRoute = document.createElement("option");
       const routePoints = {
         lat1: this.startPoint.latitude,
@@ -477,14 +470,119 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         lat2: this.destinationPoint.latitude,
         lng2: this.destinationPoint.longitude
       };
-      newRoute.text = "traseu1"
+      newRoute.text = "traseu1";
       newRoute.value = JSON.stringify(routePoints);
       this.dropDownElement.appendChild(newRoute);
     }
-    
+
     console.log("aici");
     console.log(getAuth());
     // console.log(this.fbs.getChangeFeedList());
+  }
+
+  showRouteFromDropdown() {
+    // Assuming dropDownElement is your dropdown element
+    const dropDownSelectElement = document.getElementById('routes') as HTMLSelectElement;
+
+    // Get the selected option
+    const selectedOption = dropDownSelectElement.options[dropDownSelectElement.selectedIndex];
+
+    // Access the value and text of the selected option
+    const selectedValue = selectedOption.value;
+    const selectedText = selectedOption.text;
+
+    // Now, you can use selectedValue and selectedText as needed
+    console.log('Selected Value:', selectedValue);
+    console.log('Selected Text:', selectedText);
+
+    // Parse the JSON string to an object
+    var selectedObject = JSON.parse(selectedValue);
+
+    // Access the properties
+    var lat1 = selectedObject.lat1;
+    var lng1 = selectedObject.lng1;
+    var lat2 = selectedObject.lat2;
+    var lng2 = selectedObject.lng2;
+
+    var point1 = {
+      latitude: lat1,
+      longitude: lng1
+    };
+
+    var point2 = {
+      latitude: lat2,
+      longitude: lng2
+    };
+
+    var mapPoint1 = new Point(point1);
+    var mapPoint2 = new Point(point2);
+
+    const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
+
+    this.view.graphics.removeAll();
+
+    const graphic1 = new Graphic({
+      symbol: {
+        type: "simple-marker",
+        color: "white",
+        size: "8px"
+      } as any,
+      geometry: mapPoint1
+    });
+    this.view.graphics.add(graphic1);
+
+    const graphic2 = new Graphic({
+      symbol: {
+        type: "simple-marker",
+        color: "black",
+        size: "8px"
+      } as any,
+      geometry: mapPoint2
+    });
+    this.view.graphics.add(graphic2);
+
+    const routeParams = new RouteParameters({
+      stops: new FeatureSet({
+        features: this.view.graphics.toArray()
+      }),
+      returnDirections: true
+    });
+
+    route.solve(routeUrl, routeParams).then((data: any) => {
+      for (let result of data.routeResults) {
+        result.route.symbol = {
+          type: "simple-line",
+          color: [5, 150, 255],
+          width: 3
+        };
+        this.view.graphics.add(result.route);
+      }
+
+      // Display directions
+      if (data.routeResults.length > 0) {
+        const directions: any = document.createElement("ol");
+        directions.classList = "esri-widget esri-widget--panel esri-directions__scroller";
+        directions.style.marginTop = "0";
+        directions.style.padding = "15px 15px 15px 30px";
+        const features = data.routeResults[0].directions.features;
+
+        let sum = 0;
+        // Show each direction
+        features.forEach((result: any, i: any) => {
+          sum += parseFloat(result.attributes.length);
+          const direction = document.createElement("li");
+          direction.innerHTML = result.attributes.text + " (" + result.attributes.length + " miles)";
+          directions.appendChild(direction);
+        });
+
+        sum = sum * 1.609344;
+        console.log('dist (km) = ', sum);
+        this.view.ui.empty("top-right");
+        this.view.ui.add(directions, "top-right");
+      }
+    }).catch((error: any) => {
+      console.log(error);
+    });
   }
 
   disconnectFirebase() {
@@ -513,7 +611,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       // destroy the map view
       this.view.container = null;
     }
-   // this.stopTimer();
+    // this.stopTimer();
     this.disconnectFirebase();
   }
 
