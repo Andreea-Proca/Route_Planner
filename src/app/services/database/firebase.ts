@@ -13,7 +13,8 @@ export interface IRouteItem {
     lat1: number,
     lng1: number,
     lat2: number,
-    lng2: number
+    lng2: number,
+    user: string
 }
  
 @Injectable()
@@ -48,15 +49,20 @@ export class FirebaseService {
         this.db.list('list').push(item);
     }
  
-    addRouteItem(lat1: number, lng1: number, lat2: number, lng2: number, name: string) {
+    addRouteItem(lat1: number, lng1: number, lat2: number, lng2: number, name: string, user: string) {
         let item: IRouteItem = {
             name: name,
             lat1: lat1,
             lng1: lng1,
             lat2: lat2,
-            lng2: lng2
+            lng2: lng2,
+            user: user
         };
         this.db.list('list').push(item);
+    }
+
+    extractUserRoutes() {
+        return this.db.list('list').valueChanges();
     }
  
     syncPointItem(lat: number, lng: number) {

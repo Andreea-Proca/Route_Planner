@@ -16,7 +16,7 @@
             </mat-list-item> -->
             <mat-divider></mat-divider>
             <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)="connectFirebase()" style="background-color: #3498db;">View routes</button>
+                <button mat-button mat-button color="primary" class="full-w" (click)="viewUserRoutes()" style="background-color: #3498db;">View routes</button>
             </mat-list-item>
             <mat-divider></mat-divider>
             <mat-list-item>
@@ -33,6 +33,11 @@
             </mat-list-item>
             <mat-list-item>
                 <button mat-button mat-button color="primary" class="full-w" (click)="showRouteFromDropdown()">Show selected route</button>
+            </mat-list-item>
+            <mat-list-item>
+                <label for="cars" style="color: black;">Choose a route:</label>
+                <select name="routes" id="userRoutes" (change)="showUserRoutes()">
+                </select>
             </mat-list-item>
         </mat-list>
     </div>

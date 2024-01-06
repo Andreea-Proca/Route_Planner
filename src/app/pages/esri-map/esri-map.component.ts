@@ -22,7 +22,7 @@ import {
 import esri = __esri; // Esri TypeScript Types
 
 import { Subscription } from "rxjs";
-import { FirebaseService, ITestItem } from "src/app/services/database/firebase";
+import { FirebaseService, IRouteItem, ITestItem } from "src/app/services/database/firebase";
 import { FirebaseMockService } from "src/app/services/database/firebase-mock";
 import { getAuth } from "firebase/auth";
 import Config from '@arcgis/core/config';
@@ -73,6 +73,10 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
   dropDownElement: HTMLElement;
 
+  dropDownUserElement: HTMLElement;
+
+  selectedDropDown: string = "routes";
+
   // Current route
   startPoint: Point;
   destinationPoint: Point;
@@ -121,7 +125,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       this.addGraphicLayers();
 
       this.dropDownElement = document.getElementById("routes");
-
 
       this.addPoint(this.pointCoords[1], this.pointCoords[0], true);
 
@@ -280,6 +283,10 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     if (register) {
       this.pointGraphic = pointGraphic;
     }
+  }
+
+  showUserRoutes() {
+    this.selectedDropDown = "userRoutes";
   }
 
   removePoint() {
@@ -459,10 +466,15 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this.fbs.addPointItem(this.view.center.latitude, this.view.center.longitude);
   }
 
+  viewUserRoutes() {
+    
+    // console.log(userRoutes);
+  }
+
   addRouteItem() {
     console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
     if (this.startPoint !== null && this.destinationPoint !== null) {
-      this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude, this.destinationPoint.latitude, this.destinationPoint.longitude, "traseu1");
+      this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude, this.destinationPoint.latitude, this.destinationPoint.longitude, "traseu1", this.authService.userData.uid);
       const newRoute = document.createElement("option");
       const routePoints = {
         lat1: this.startPoint.latitude,
@@ -473,6 +485,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       newRoute.text = "traseu1";
       newRoute.value = JSON.stringify(routePoints);
       this.dropDownElement.appendChild(newRoute);
+      this.dropDownUserElement.appendChild(newRoute);
     }
 
     console.log("aici");
@@ -481,8 +494,12 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   }
 
   showRouteFromDropdown() {
+    let dropDownSelectElement = document.getElementById('routes') as HTMLSelectElement;
     // Assuming dropDownElement is your dropdown element
-    const dropDownSelectElement = document.getElementById('routes') as HTMLSelectElement;
+    if (this.selectedDropDown === "userRoutes") {
+      dropDownSelectElement = document.getElementById('userRoutes') as HTMLSelectElement;
+    }
+    
 
     // Get the selected option
     const selectedOption = dropDownSelectElement.options[dropDownSelectElement.selectedIndex];
@@ -594,10 +611,33 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     }
   }
 
+  addRoutesInDropdown(userRoutes: Array<IRouteItem>) {
+    for (let i = 0; i < userRoutes.length; i++) {
+      const newRoute = document.createElement("option");
+      const routePoints = {
+        lat1: userRoutes[i].lat1,
+        lng1: userRoutes[i].lng1,
+        lat2: userRoutes[i].lat2,
+        lng2: userRoutes[i].lng2
+      };
+      newRoute.text = userRoutes[i].name;
+      newRoute.value = JSON.stringify(routePoints);
+      this.dropDownUserElement.appendChild(newRoute);
+    }      
+  }
+
   ngOnInit() {
     // Initialize MapView and return an instance of MapView
     console.log("initializing map");
     console.log(this.authService);
+    let userRoutes = []
+    this.dropDownUserElement = document.getElementById("userRoutes");
+    this.fbs.extractUserRoutes().subscribe(data => {
+      // Display the array of objects in the console
+      userRoutes = data.filter((route: any) => route.user === this.authService.userData.uid)
+      this.addRoutesInDropdown(userRoutes)
+      console.log(userRoutes);
+    });
     this.initializeMap().then(() => {
       // The map has been initialized
       console.log("mapView ready: ", this.view.ready);
