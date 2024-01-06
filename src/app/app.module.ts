@@ -30,9 +30,10 @@ import { VerifyEmailComponent } from './pages/verify-email/verify-email.componen
 import { AuthService } from "./services/auth";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MaterialModule } from './material-module';
+import { ReviewComponent } from './pages/review/review.component';
 
 @NgModule({
-  declarations: [AppComponent, EsriMapComponent, DashboardComponent, SignInComponent, SignUpComponent, ForgotPasswordComponent, VerifyEmailComponent],
+  declarations: [AppComponent, EsriMapComponent, DashboardComponent, SignInComponent, SignUpComponent, ForgotPasswordComponent, VerifyEmailComponent, ReviewComponent],
   imports: [
     BrowserModule,
     ReactiveFormsModule,
