@@ -56,13 +56,43 @@ import { AuthService } from "src/app/services/auth";
 import Popup from "@arcgis/core/widgets/Popup.js";
 
 import { FormControl, FormGroup, Validators } from "@angular/forms";
-
+import { stringToKeyValue } from "@angular/flex-layout/extended/style/style-transforms";
+import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
+import PopupTemplate from "@arcgis/core/PopupTemplate.js";
+import Legend from '@arcgis/core/widgets/Legend';
 
 @Component({
   selector: "app-esri-map",
   templateUrl: "./esri-map.component.html",
   styleUrls: ["./esri-map.component.scss"]
 })
+
+
+// const medical_unitLayer = new FeatureLayer({
+//   url: 'https://services.arcgis.com/IjJbzDQF4hOiNl87/arcgis/rest/services/medical_punct/FeatureServer/0',
+// });
+// const food_storeLayer = new FeatureLayer({
+//   url: 'https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/restaurante_bune_romania/FeatureServer/0',
+// });
+// const storeLayer = new FeatureLayer({
+//   url: 'https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/locuri_shopping_romania/FeatureServer',
+// });
+// const accommodation_unitsLayer = new FeatureLayer({
+//   url: 'https://services7.arcgis.com/v0CEu87DMHNQuNtr/arcgis/rest/services/Unitati_cazare/FeatureServer',
+// });
+// const tourist_attractionsLayer = new FeatureLayer({
+//   url: 'https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/tourist_attractions_in_romania/FeatureServer',
+// });
+// const natural_attractionsLayer = new FeatureLayer({
+//   url: 'https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/atractii_naturale/FeatureServer',
+// });
+// const natural_parksLayer = new FeatureLayer({
+//   url: 'https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Parcuri_Naturale_RO/FeatureServer',
+// });
+// const virgin_forestsLayer = new FeatureLayer({
+//   url: 'https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Paduri/FeatureServer',
+// });
+
 export class EsriMapComponent implements OnInit, OnDestroy {
   // The <div> where we will place the map
   @ViewChild("mapViewNode", { static: true }) private mapViewEl: ElementRef;
@@ -85,10 +115,10 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
   // Attributes
   zoom = 10;
-  center: Array<number> = [-118.73682450024377, 34.07817583063242];
+  center: Array<number> = [25.009431, 45.944286];
   basemap = "streets-vector";
   loaded = false;
-  pointCoords: number[] = [-118.73682450024377, 34.07817583063242];
+  pointCoords: number[] = [25.009431, 45.944286];
   dir: number = 0;
   count: number = 0;
   timeoutHandler = null;
@@ -105,6 +135,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   locatorWidget: locator;
 
   routeForm: FormGroup;
+  legendOn: boolean = true;
 
   constructor(
     private authService: AuthService,
@@ -116,7 +147,10 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
       // Configure the Map
       const mapProperties: esri.WebMapProperties = {
-        basemap: this.basemap
+        //basemap: this.basemap
+        portalItem: {
+          id: "6f90bddf9cec4e81aee4e2dcefe7169d"
+        }
       };
       console.log("aici")
 
@@ -124,7 +158,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
       this.map = new WebMap(mapProperties);
 
-      this.addFeatureLayers();
+      //this.addFeatureLayers();
       this.addGraphicLayers();
 
       this.dropDownElement = document.getElementById("routes");
@@ -136,7 +170,14 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         container: this.mapViewEl.nativeElement,
         center: this.center,
         zoom: this.zoom,
-        map: this.map
+        map: this.map,
+        popup: {
+          dockEnabled: true,
+          dockOptions: {
+            buttonEnabled: false,
+            breakpoint: false
+          }
+        }
       };
 
       this.view = new MapView(mapViewProperties);
@@ -178,6 +219,22 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         index: 0
       });
 
+      const legend = new Legend({
+        view: this.view,
+      });
+      const buttonLegend = document.createElement('button');
+      buttonLegend.innerHTML = `<img src=${"https://cdn3.iconfinder.com/data/icons/education-62/128/open-textbook-512.png"} alt="Icon" style="width: 20px; height: 20px;"/>`;
+      buttonLegend.className = 'esri-widget--button esri-widget esri-interactive';
+      buttonLegend.addEventListener('click', () => { 
+        if (this.legendOn) {
+          this.view.ui.add(legend, 'bottom-left');
+        } else {
+          this.view.ui.remove(legend);
+        }
+        this.legendOn = !this.legendOn;
+      });
+      this.view.ui.add(buttonLegend, 'bottom-left');
+      this.showPopup("Legend", buttonLegend);
 
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/park.png", "park", "park");
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/mountain.png", "mountain", "mountain");
@@ -187,6 +244,21 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/train-station.png", "train station", "train-station");
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/grocery-store.png", "grocery", "grocery-store");
 
+      this.buttonLayer("medical unit");
+      this.buttonLayer("food store");
+      this.buttonLayer("store");
+      this.buttonLayer("accommodation units");
+      this.buttonLayer("tourist attractions");
+      this.buttonLayer("natural attraction");
+      this.buttonLayer("natural parks");
+      this.buttonLayer("virgin forests");
+
+      const button = document.createElement('button');
+      button.innerHTML = `<img src=${"https://cdn3.iconfinder.com/data/icons/mother-earth-day-6/64/Recycle_bin-trash_can-trash_bin-ecology-garbage-512.png"} alt="Icon" style="width: 20px; height: 20px;"/>`;
+      button.className = 'esri-widget--button esri-widget esri-interactive';
+      button.addEventListener('click', () => { this.map.removeAll(); this.addGraphicLayers(); });
+      this.view.ui.add(button, 'bottom-right');
+      this.showPopup("remove all filters", button);
 
       this.view.when(() => {
         console.log("ArcGIS map loaded");
@@ -208,6 +280,29 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.log("EsriLoader: ", error);
     }
+  }
+
+  showPopup(name: string, button: any) {
+    button.addEventListener('mouseover', () => {
+      var rect = button.getBoundingClientRect();
+
+      var x = rect.left + rect.width / 2;
+      var y = rect.top + rect.height / 2;
+      var screenPoint = {
+        x: x,
+        y: y,
+        // spatialReference: this.view.spatialReference
+      };
+      var mapPoint = this.view.toMap(screenPoint);
+
+      this.view.openPopup({
+        title: name,
+        content: `<div>Click here to see ${name} in this area.</div>`,
+        location: mapPoint
+      });
+    });
+
+    button.addEventListener('mouseout', () => { this.view.closePopup(); });
   }
 
 
@@ -235,33 +330,33 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this.map.add(this.graphicsLayer);
   }
 
-  addFeatureLayers() {
-    // Trailheads feature layer (points)
-    var trailheadsLayer: __esri.FeatureLayer = new FeatureLayer({
-      url:
-        "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0"
-    });
+  // addFeatureLayers() {
+  //   // Trailheads feature layer (points)
+  //   var trailheadsLayer: __esri.FeatureLayer = new FeatureLayer({
+  //     url:
+  //       "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0"
+  //   });
 
-    this.map.add(trailheadsLayer);
+  //   this.map.add(trailheadsLayer);
 
-    // Trails feature layer (lines)
-    var trailsLayer: __esri.FeatureLayer = new FeatureLayer({
-      url:
-        "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0"
-    });
+  //   // Trails feature layer (lines)
+  //   var trailsLayer: __esri.FeatureLayer = new FeatureLayer({
+  //     url:
+  //       "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0"
+  //   });
 
-    this.map.add(trailsLayer, 0);
+  //   this.map.add(trailsLayer, 0);
 
-    // Parks and open spaces (polygons)
-    var parksLayer: __esri.FeatureLayer = new FeatureLayer({
-      url:
-        "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0"
-    });
+  //   // Parks and open spaces (polygons)
+  //   var parksLayer: __esri.FeatureLayer = new FeatureLayer({
+  //     url:
+  //       "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0"
+  //   });
 
-    this.map.add(parksLayer, 0);
+  //   this.map.add(parksLayer, 0);
 
-    console.log("feature layers added");
-  }
+  //   console.log("feature layers added");
+  // }
 
   addPoint(lat: number, lng: number, register: boolean) {
     let point = new Point({
@@ -335,26 +430,120 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     button.addEventListener('click', () => { this.findPlaces(this.view.center, category, icon); });
     this.view.ui.add(button, 'top-left');
 
-    button.addEventListener('mouseover', () => {
-      var rect = button.getBoundingClientRect();
+    this.showPopup(category, button);
+  }
 
-      var x = rect.left + rect.width / 2;
-      var y = rect.top + rect.height / 2;
-      var screenPoint = {
-        x: x,
-        y: y,
-        // spatialReference: this.view.spatialReference
-      };
-      var mapPoint = this.view.toMap(screenPoint);
+  buttonLayer(name: string) {
+    var url = "";
+    var urlIcon = "";
+    switch (name) {
+      case "medical unit": {
+        url = "https://services.arcgis.com/IjJbzDQF4hOiNl87/arcgis/rest/services/medical_punct/FeatureServer/0";
+        urlIcon = "https://cdn4.iconfinder.com/data/icons/hospital-element-1/64/first_aid_kit-healthcare-medical-first_aid-medical_equipment-hospital-512.png"; break;
+      }
+      case "food store": {
+        url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/restaurante_bune_romania/FeatureServer/0";
+        urlIcon = "https://cdn1.iconfinder.com/data/icons/grocery-14/64/paper_bag-market-shopping-food-water-grocery_bag-512.png"; break;
+      }
+      case "store": {
+        url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/locuri_shopping_romania/FeatureServer";
+        urlIcon = "https://cdn1.iconfinder.com/data/icons/grocery-14/64/supermarket-shop-store-online_store-commerce-512.png"; break;
+      }
+      case "accommodation units": {
+        url = "https://services7.arcgis.com/v0CEu87DMHNQuNtr/arcgis/rest/services/Unitati_cazare/FeatureServer";
+        urlIcon = "https://cdn1.iconfinder.com/data/icons/emoji-122/64/sleep-emoji-emoticon-feeling-sleeping-face-512.png"; break;
+      }
+      case "tourist attractions": {
+        url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/tourist_attractions_in_romania/FeatureServer";
+        urlIcon = "https://cdn4.iconfinder.com/data/icons/hotel-services-46/64/map-tourist-destination-direction-attraction-512.png"; break;
+      }
+      case "natural attractions": {
+        url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/atractii_naturale/FeatureServer";
+        urlIcon = "https://cdn4.iconfinder.com/data/icons/location-flat/64/Location-map-pin-attractions-favorite-place-512.png"; break;
+      }
+      case "natural parks": {
+        url = "https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Parcuri_Naturale_RO/FeatureServer";
+        urlIcon = "https://cdn4.iconfinder.com/data/icons/landscape-filled/64/landscape_land_terrain-07-512.png"; break;
+      }
+      case "virgin forests": {
+        url = "https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Paduri/FeatureServer";
+        urlIcon = "https://cdn3.iconfinder.com/data/icons/tree-42/64/25-tree-garden-yard-gardening-botanical-512.png"; break;
+      }
+      default: { break; }
+    }
 
-      this.view.openPopup({
-        title: category,
-        content: `<div>Click here to see ${category} in this area.</div>`,
-        location: mapPoint
+    const button = document.createElement('button');
+    button.innerHTML = `<img src=${urlIcon} alt="Icon" style="width: 20px; height: 20px;"/>`;
+    button.className = 'esri-widget--button esri-widget esri-interactive';
+
+    button.addEventListener('click', () => {
+      const renderer = new SimpleRenderer({
+        symbol: new PictureMarkerSymbol({
+          url: urlIcon,
+          width: '22px',
+          height: '22px'
+        })
       });
+      var layer: __esri.FeatureLayer = new FeatureLayer({
+        url: url,
+        renderer: renderer
+      });
+      this.map.add(layer);
+
+      // const legend = new Legend({
+      //   view: this.view,
+      // });
+      // this.view.ui.add(legend, 'bottom-right');
+
+      const popupTemplate = new PopupTemplate({
+        title: '{Name}', // Replace with the actual attribute name
+        content: [
+          {
+            type: 'fields',
+            fieldInfos: [
+              {
+                fieldName: 'business_status',
+                label: 'Business Status',
+              },
+              {
+                fieldName: 'formatted_address',
+                label: 'Formatted Address',
+              },
+              {
+                fieldName: 'place_id',
+                label: 'Place ID',
+              },
+              {
+                fieldName: 'price_level',
+                label: 'Price Level',
+              },
+              {
+                fieldName: 'rating',
+                label: 'Rating',
+              },
+              {
+                fieldName: 'types',
+                label: 'Types',
+              },
+              {
+                fieldName: 'url',
+                label: 'URL',
+              },
+              {
+                fieldName: 'user_ratings_total',
+                label: 'User Ratings Total',
+              },
+            ],
+          },
+        ],
+      });
+      layer.popupTemplate = popupTemplate;
+
     });
 
-    button.addEventListener('mouseout', () => { this.view.closePopup(); });
+    this.view.ui.add(button, 'bottom-right');
+
+    this.showPopup(name, button);
   }
 
   addRouter() {
@@ -599,6 +788,9 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
         let sum = 0;
         // Show each direction
+        const direction = document.createElement("");
+        direction.innerHTML = "Directions:";
+        directions.appendChild(direction);
         features.forEach((result: any, i: any) => {
           sum += parseFloat(result.attributes.length);
           const direction = document.createElement("li");
@@ -629,8 +821,16 @@ export class EsriMapComponent implements OnInit, OnDestroy {
           content: `<div>Starting point of ${name}</div> <div>Location: <div>&nbsp;&nbsp;lat: ${this.startPoint.latitude.toFixed(3)},</div><div>&nbsp;&nbsp;lng: ${this.startPoint.longitude.toFixed(3)}</div> </div>`,
           location: this.startPoint
         });
-      else
-        this.view.closePopup();
+      else {
+        if (this.destinationPoint.longitude.toFixed(3) == hoveredPoint.longitude.toFixed(3) && this.destinationPoint.latitude.toFixed(3) == hoveredPoint.latitude.toFixed(3))
+          this.view.openPopup({
+            title: name,
+            content: `<div>Destination point of ${name}</div> <div>Location: <div>&nbsp;&nbsp;lat: ${this.destinationPoint.latitude.toFixed(3)},</div><div>&nbsp;&nbsp;lng: ${this.destinationPoint.longitude.toFixed(3)}</div> </div>`,
+            location: this.destinationPoint
+          });
+        else
+          this.view.closePopup();
+      }
     });
   }
 
