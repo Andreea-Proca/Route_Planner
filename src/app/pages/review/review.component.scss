@@ -1,0 +1,65 @@
+.review-form-container {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    max-width: 500px;
+    margin: 2rem auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .review-form-container h2 {
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .review-form-container form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .review-form-container input[type="text"],
+  .review-form-container select,
+  .review-form-container textarea {
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .review-form-container button[type="submit"] {
+    padding: 0.5rem;
+    color: white;
+    background: linear-gradient(to right, #4b6cb7, #182848);
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  
+    &:hover {
+      background: linear-gradient(to right, #182848, #4b6cb7);
+    }
+  }
+  
+  .review-form-container .rating-container {
+    display: flex;
+    justify-content: center;
+  
+    input[type="radio"] {
+      display: none;
+    }
+  
+    label {
+      cursor: pointer;
+      font-size: 2rem;
+      color: #ddd;
+  
+  
+      &.checked {
+        color: #ffc107;
+      }
+    }
+  }
+  

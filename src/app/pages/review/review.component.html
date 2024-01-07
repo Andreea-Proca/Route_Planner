@@ -1,1 +1,26 @@
-<p>review works!</p>
+<div class = "review-form-container">
+<h2>Submit a Review</h2>
+
+
+<form (ngSubmit)="onSubmit()">
+  <label for="routeSelect">Choose a route:</label>
+  <select id="routeSelect" [(ngModel)]="selectedRoute" name="route">
+    <option *ngFor="let route of routes" [value]="route.name">{{ route.name }}</option>
+  </select>
+
+
+<div class="rating-container">
+  <label *ngFor="let r of [1, 2, 3, 4, 5]; let i = index" 
+         [class.checked]="rating >= r">
+    ★ <!-- Simbol de stea -->
+    <input type="radio" name="rating" [(ngModel)]="rating" [value]="r" (change)="updateRating(i + 1)">
+  </label>
+</div>
+
+
+  <label for="reviewText">Your review:</label>
+  <textarea id="reviewText" [(ngModel)]="reviewText" name="review"></textarea>
+
+  <button type="submit">Save</button>
+</form>
+</div>

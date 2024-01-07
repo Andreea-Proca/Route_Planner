@@ -31,6 +31,7 @@ import { AuthService } from "./services/auth";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MaterialModule } from './material-module';
 import { ReviewComponent } from './pages/review/review.component';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [AppComponent, EsriMapComponent, DashboardComponent, SignInComponent, SignUpComponent, ForgotPasswordComponent, VerifyEmailComponent, ReviewComponent],
@@ -49,7 +50,8 @@ import { ReviewComponent } from './pages/review/review.component';
     AngularFirestoreModule,
     AngularFireStorageModule,
     AngularFireDatabaseModule,
-    MaterialModule
+    MaterialModule,
+    FormsModule
   ],
   providers: [
     FirebaseService,

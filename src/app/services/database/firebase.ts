@@ -1,11 +1,17 @@
 import { Injectable } from '@angular/core';
 import { AngularFireDatabase } from '@angular/fire/compat/database';
 import { Observable } from 'rxjs';
- 
+import { take } from 'rxjs/operators'
+
 export interface ITestItem {
     name: string,
     lat: number,
     lng: number
+}
+
+export interface IReview {
+    stars: number,
+    text: string
 }
  
 export interface IRouteItem {
@@ -14,7 +20,8 @@ export interface IRouteItem {
     lng1: number,
     lat2: number,
     lng2: number,
-    user: string
+    user: string,
+    reviews: IReview[]
 }
  
 @Injectable()
@@ -56,7 +63,8 @@ export class FirebaseService {
             lng1: lng1,
             lat2: lat2,
             lng2: lng2,
-            user: user
+            user: user,
+            reviews: []
         };
         this.db.list('list').push(item);
     }
@@ -73,4 +81,19 @@ export class FirebaseService {
         };
         this.db.object('obj').set([item]);
     }
+
+    addReviewToRoute(routeName: string, review: IReview) {
+        const routesRef = this.db.list<IRouteItem>('list', ref => 
+          ref.orderByChild('name').equalTo(routeName)
+        );
+        routesRef.snapshotChanges().pipe(take(1)).subscribe(actions => {
+          actions.forEach(action => {
+            const route: IRouteItem = action.payload.val();
+            if (route) {
+              const reviews = route.reviews ? [...route.reviews, review] : [review];
+              this.db.object(`list/${action.key}`).update({ reviews: reviews });
+            }
+          });
+        });
+      }
 }
