@@ -55,6 +55,8 @@ import ActionButton from '@arcgis/core/support/actions/ActionButton.js';
 import { AuthService } from "src/app/services/auth";
 import Popup from "@arcgis/core/widgets/Popup.js";
 
+import { FormControl, FormGroup, Validators } from "@angular/forms";
+
 
 @Component({
   selector: "app-esri-map",
@@ -91,7 +93,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   count: number = 0;
   timeoutHandler = null;
 
-
   // firebase sync
   isConnected: boolean = false;
   subscriptionList: Subscription;
@@ -102,6 +103,8 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   compassWidget: Compass;
   fullscreenWidget: Fullscreen;
   locatorWidget: locator;
+
+  routeForm: FormGroup;
 
   constructor(
     private authService: AuthService,
@@ -473,14 +476,14 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   }
 
   viewUserRoutes() {
-    
+
     // console.log(userRoutes);
   }
 
   addRouteItem() {
     console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
     if (this.startPoint !== null && this.destinationPoint !== null) {
-      this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude, this.destinationPoint.latitude, this.destinationPoint.longitude, "traseu1", this.authService.userData.uid);
+      this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude, this.destinationPoint.latitude, this.destinationPoint.longitude, this.routeForm.value.name, this.authService.userData.uid);
       // const newRoute = document.createElement("option");
       // const routePoints = {
       //   lat1: this.startPoint.latitude,
@@ -493,6 +496,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       //this.dropDownElement.appendChild(newRoute);
       // this.dropDownUserElement.appendChild(newRoute);
     }
+    this.routeForm.get('name').reset();
 
     console.log("aici");
     console.log(getAuth());
@@ -505,7 +509,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     if (this.selectedDropDown === "userRoutes") {
       dropDownSelectElement = document.getElementById('userRoutes') as HTMLSelectElement;
     }
-    
+
 
     // Get the selected option
     const selectedOption = dropDownSelectElement.options[dropDownSelectElement.selectedIndex];
@@ -526,6 +530,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     var lng1 = selectedObject.lng1;
     var lat2 = selectedObject.lat2;
     var lng2 = selectedObject.lng2;
+    var name = selectedText;
 
     var point1 = {
       latitude: lat1,
@@ -539,6 +544,9 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
     var mapPoint1 = new Point(point1);
     var mapPoint2 = new Point(point2);
+
+    this.startPoint = mapPoint1;
+    this.destinationPoint = mapPoint2;
 
     const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
 
@@ -606,6 +614,24 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     }).catch((error: any) => {
       console.log(error);
     });
+
+    this.routePopup(name);
+  }
+
+  routePopup(name: string) {
+    // Add a click event listener for the point
+    this.view.on('pointer-move', (event) => {
+      const hoveredPoint = this.view.toMap({ x: event.x, y: event.y });
+      //console.log(this.startPoint.longitude, hoveredPoint.longitude, this.startPoint.latitude, hoveredPoint.latitude);
+      if (this.startPoint.longitude.toFixed(3) == hoveredPoint.longitude.toFixed(3) && this.startPoint.latitude.toFixed(3) == hoveredPoint.latitude.toFixed(3))
+        this.view.openPopup({
+          title: name,
+          content: `<div>Starting point of ${name}</div> <div>Location: <div>&nbsp;&nbsp;lat: ${this.startPoint.latitude.toFixed(3)},</div><div>&nbsp;&nbsp;lng: ${this.startPoint.longitude.toFixed(3)}</div> </div>`,
+          location: this.startPoint
+        });
+      else
+        this.view.closePopup();
+    });
   }
 
   disconnectFirebase() {
@@ -639,6 +665,8 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     // Initialize MapView and return an instance of MapView
     console.log("initializing map");
     console.log(this.authService);
+
+    this.createRouteForm();
 
     let routes = [];
     this.dropDownElement = document.getElementById("routes");
@@ -676,6 +704,13 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     }
     // this.stopTimer();
     this.disconnectFirebase();
+  }
+
+  createRouteForm() {
+    this.routeForm = new FormGroup({
+      name: new FormControl('', Validators.required),
+      //password: new FormControl('', Validators.required)
+    })
   }
 
 }

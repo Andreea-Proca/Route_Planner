@@ -1,7 +1,7 @@
 <!-- Here's the DIV that we inject the map into -->
 
-<div fxLayout="row">
-    <div fxFlex="30%" fxLayout="column">
+<div fxLayout="row" style="background-color: lightgray;">
+    <div fxFlex="35%" fxLayout="column">
         <mat-list>
             <mat-list-item>
                 <span class="label" style="background-color:blueviolet;">Create a route</span>
@@ -13,14 +13,22 @@
             </mat-list-item> -->
             <mat-divider></mat-divider>
             <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)="addRouteItem()"
-                    style="color: white; background-color: #3498db;">Save route</button>
+                <form [formGroup]="routeForm"  (ngSubmit)="addRouteItem()">
+                    <mat-form-field appearance="fill" style="background-color:cadetblue; color:black">
+                        <mat-label>Name of the route</mat-label>
+                        <input matInput formControlName="name" placeholder="Name of the route" style="color: black;">
+                    </mat-form-field>
+                </form>
             </mat-list-item>
             <mat-list-item>
-                <span class="label" style="background-color:blueviolet;">View routes</span>
+                <button mat-button mat-button color="primary" class="full-w" (click)="addRouteItem()"
+                    style="color: white; background-color: #3498db;">Save new route</button>
+            </mat-list-item>
+            <mat-list-item>
+                <span class="label" style="background-color:blueviolet;">View all routes</span>
             </mat-list-item>
             <mat-list-item style="background-color: rgb(145, 134, 216);">
-                <label for="cars" style="color: black;">Choose a route from all: </label>
+                <label for="cars" style="color: black;">Choose from all: </label>
                 <select name="routes" id="routes" (change)="showAllRoutes()">
                     <option value="volvo">Volvo</option>
                 </select>
@@ -29,14 +37,21 @@
                 <button mat-button mat-button color="primary" class="full-w" (click)="showRouteFromDropdown()"
                     style="color: white; background-color: #3498db;">Show selected route</button>
             </mat-list-item> -->
+            <mat-list-item>
+                <button mat-button mat-button color="primary" class="full-w" (click)="addRouteItem()"
+                    style="color: white; background-color: #3498db;">Add selected route to your list</button>
+            </mat-list-item>
+            <mat-list-item>
+                <span class="label" style="background-color:blueviolet;">View your routes</span>
+            </mat-list-item>
             <mat-list-item style="background-color: rgb(145, 134, 216);">
-                <label for="cars" style="color: black;">Choose a route from your list:  </label>
+                <label for="cars" style="color: black;">Choose from your list: </label>
                 <select name="routes" id="userRoutes" (change)="showUserRoutes()">
                 </select>
             </mat-list-item>
         </mat-list>
     </div>
-    <div fxFlex="70%" fyFlex="100%">
+    <div fxFlex="65%" fyFlex="100%">
         <div #mapViewNode></div>
     </div>
 </div>
