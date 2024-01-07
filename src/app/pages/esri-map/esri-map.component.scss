@@ -14,8 +14,62 @@
   text-align: center;
   padding-top: 10px;
   padding-bottom: 10px;
+  max-width: none;
+  padding-left: 150px;
+  padding-right: 150px;
+  margin-bottom: 30px;
+  margin-top: 50px;
 }
 
 .full-w {
   width: 100%;
+}
+
+/* Add this CSS to your styles file */
+
+/* Styling for the left column */
+.mat-list-item {
+  margin-bottom: 30px;
+}
+
+.label {
+  font-weight: 400;
+  color: white;
+}
+
+button.full-w {
+  //width: 100%;
+  font-size: 15px; /* Adjust the font size */
+  padding: 8px; /* Adjust the padding */
+  margin-left: 100px;
+  margin-right: 100px;
+}
+
+/* Styling for the select dropdowns */
+label {
+  margin-bottom: 5px;
+  display: block;
+}
+
+select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* Styling for the right column */
+[fxFlex="70%"] {
+  padding: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background-color: #f2f2f2;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 768px) {
+  [fxFlex="30%"] {
+    fxFlex: 100%;
+  }
 }

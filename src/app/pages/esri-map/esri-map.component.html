@@ -1,47 +1,42 @@
 <!-- Here's the DIV that we inject the map into -->
 
 <div fxLayout="row">
-    <div fxFlex="20%" fxLayout="column">
+    <div fxFlex="30%" fxLayout="column">
         <mat-list>
             <mat-list-item>
-                <span class="label">Firebase</span>
-            </mat-list-item>
-            <!-- <mat-divider></mat-divider>
-            <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)="connectFirebase()">Connect</button>
+                <span class="label" style="background-color:blueviolet;">Create a route</span>
             </mat-list-item>
             <mat-divider></mat-divider>
-            <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)="addPointItem()">Add item</button>
+            <!-- <mat-list-item>
+                <button mat-button mat-button color="primary" class="full-w" (click)="viewUserRoutes()"
+                    style="color: white; background-color: #3498db;">View routes</button>
             </mat-list-item> -->
             <mat-divider></mat-divider>
             <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)="viewUserRoutes()" style="background-color: #3498db;">View routes</button>
-            </mat-list-item>
-            <mat-divider></mat-divider>
-            <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)="addRouteItem()" style="background-color: #3498db;">Save route</button>
+                <button mat-button mat-button color="primary" class="full-w" (click)="addRouteItem()"
+                    style="color: white; background-color: #3498db;">Save route</button>
             </mat-list-item>
             <mat-list-item>
-                <label for="cars" style="color: black;">Choose a route:</label>
-                <select name="routes" id="routes">
+                <span class="label" style="background-color:blueviolet;">View routes</span>
+            </mat-list-item>
+            <mat-list-item style="background-color: rgb(145, 134, 216);">
+                <label for="cars" style="color: black;">Choose a route from all: </label>
+                <select name="routes" id="routes" (change)="showAllRoutes()">
                     <option value="volvo">Volvo</option>
-                    <option value="saab">Saab</option>
-                    <option value="mercedes">Mercedes</option>
-                    <option value="audi">Audi</option>
                 </select>
             </mat-list-item>
-            <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)="showRouteFromDropdown()">Show selected route</button>
-            </mat-list-item>
-            <mat-list-item>
-                <label for="cars" style="color: black;">Choose a route:</label>
+            <!-- <mat-list-item>
+                <button mat-button mat-button color="primary" class="full-w" (click)="showRouteFromDropdown()"
+                    style="color: white; background-color: #3498db;">Show selected route</button>
+            </mat-list-item> -->
+            <mat-list-item style="background-color: rgb(145, 134, 216);">
+                <label for="cars" style="color: black;">Choose a route from your list:  </label>
                 <select name="routes" id="userRoutes" (change)="showUserRoutes()">
                 </select>
             </mat-list-item>
         </mat-list>
     </div>
-    <div fxFlex="80%" fyFlex="100%">
+    <div fxFlex="70%" fyFlex="100%">
         <div #mapViewNode></div>
     </div>
 </div>

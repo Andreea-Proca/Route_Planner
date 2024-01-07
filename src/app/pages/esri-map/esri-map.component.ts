@@ -287,6 +287,12 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
   showUserRoutes() {
     this.selectedDropDown = "userRoutes";
+    this.showRouteFromDropdown();
+  }
+
+  showAllRoutes() {
+    this.selectedDropDown = "routes";
+    this.showRouteFromDropdown();
   }
 
   removePoint() {
@@ -475,17 +481,17 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
     if (this.startPoint !== null && this.destinationPoint !== null) {
       this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude, this.destinationPoint.latitude, this.destinationPoint.longitude, "traseu1", this.authService.userData.uid);
-      const newRoute = document.createElement("option");
-      const routePoints = {
-        lat1: this.startPoint.latitude,
-        lng1: this.startPoint.longitude,
-        lat2: this.destinationPoint.latitude,
-        lng2: this.destinationPoint.longitude
-      };
-      newRoute.text = "traseu1";
-      newRoute.value = JSON.stringify(routePoints);
-      this.dropDownElement.appendChild(newRoute);
-      this.dropDownUserElement.appendChild(newRoute);
+      // const newRoute = document.createElement("option");
+      // const routePoints = {
+      //   lat1: this.startPoint.latitude,
+      //   lng1: this.startPoint.longitude,
+      //   lat2: this.destinationPoint.latitude,
+      //   lng2: this.destinationPoint.longitude
+      // };
+      // newRoute.text = "traseu1";
+      // newRoute.value = JSON.stringify(routePoints);
+      //this.dropDownElement.appendChild(newRoute);
+      // this.dropDownUserElement.appendChild(newRoute);
     }
 
     console.log("aici");
@@ -611,7 +617,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     }
   }
 
-  addRoutesInDropdown(userRoutes: Array<IRouteItem>) {
+  addRoutesInDropdown(userRoutes: Array<IRouteItem>, type: string) {
     for (let i = 0; i < userRoutes.length; i++) {
       const newRoute = document.createElement("option");
       const routePoints = {
@@ -622,21 +628,38 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       };
       newRoute.text = userRoutes[i].name;
       newRoute.value = JSON.stringify(routePoints);
-      this.dropDownUserElement.appendChild(newRoute);
-    }      
+      if (type === "user")
+        this.dropDownUserElement.appendChild(newRoute);
+      else if (type === "all")
+        this.dropDownElement.appendChild(newRoute);
+    }
   }
 
   ngOnInit() {
     // Initialize MapView and return an instance of MapView
     console.log("initializing map");
     console.log(this.authService);
-    let userRoutes = []
+
+    let routes = [];
+    this.dropDownElement = document.getElementById("routes");
+
+    let userRoutes = [];
     this.dropDownUserElement = document.getElementById("userRoutes");
     this.fbs.extractUserRoutes().subscribe(data => {
-      // Display the array of objects in the console
-      userRoutes = data.filter((route: any) => route.user === this.authService.userData.uid)
-      this.addRoutesInDropdown(userRoutes)
+
+      while (this.dropDownUserElement.hasChildNodes()) {
+        this.dropDownUserElement.removeChild(this.dropDownUserElement.firstChild);
+      }
+      userRoutes = data.filter((route: any) => route.user === this.authService.userData.uid);
+      this.addRoutesInDropdown(userRoutes, "user");
       console.log(userRoutes);
+
+      while (this.dropDownElement.hasChildNodes()) {
+        this.dropDownElement.removeChild(this.dropDownElement.firstChild);
+      }
+      routes = data;
+      this.addRoutesInDropdown(routes, "all");
+      console.log(routes);
     });
     this.initializeMap().then(() => {
       // The map has been initialized
