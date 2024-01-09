@@ -65,6 +65,18 @@ import LayerList from "@arcgis/core/widgets/LayerList.js";
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { ReviewComponent } from "../review/review.component";
 
+import("@arcgis/core/widgets/support/widgetUtils")
+  .then((widgetUtilsModule) => {
+    const sanitize = widgetUtilsModule.renderingSanitizer.sanitize;
+
+    widgetUtilsModule.renderingSanitizer.sanitize = function (b, c) {
+      return (typeof b == "string") ? b : sanitize.call(this, b, c);
+    };
+  })
+  .catch(error => {
+    console.error("Failed to load the module: ", error);
+  });
+
 @Component({
   selector: "app-esri-map",
   templateUrl: "./esri-map.component.html",
@@ -261,7 +273,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         view: this.view,
       });
       const buttonLegend = document.createElement('button');
-      buttonLegend.innerHTML = `<img src=${"https://cdn3.iconfinder.com/data/icons/education-62/128/open-textbook-512.png"} alt="Icon" style="width: 20px; height: 20px;"/>`;
+      buttonLegend.innerHTML = `<img src=${"https://cdn2.iconfinder.com/data/icons/halloween-filled-outline-1/512/24._scroll_magic_halloween_legend_story_fantasy-512.png"} alt="Icon" style="width: 20px; height: 20px;"/>`;
       buttonLegend.className = 'esri-widget--button esri-widget esri-interactive';
       buttonLegend.addEventListener('click', () => {
         if (this.legendOn) {
@@ -545,119 +557,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this.showPopup(name, button);
   }
 
-  // buttonLayer(name: string) {
-  //   var url = "";
-  //   var urlIcon = "";
-  //   switch (name) {
-  //     case "medical unit": {
-  //       url = "https://services.arcgis.com/IjJbzDQF4hOiNl87/arcgis/rest/services/medical_punct/FeatureServer/0";
-  //       urlIcon = "https://cdn4.iconfinder.com/data/icons/hospital-element-1/64/first_aid_kit-healthcare-medical-first_aid-medical_equipment-hospital-512.png"; break;
-  //     }
-  //     case "food store": {
-  //       url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/restaurante_bune_romania/FeatureServer/0";
-  //       urlIcon = "https://cdn1.iconfinder.com/data/icons/grocery-14/64/paper_bag-market-shopping-food-water-grocery_bag-512.png"; break;
-  //     }
-  //     case "store": {
-  //       url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/locuri_shopping_romania/FeatureServer";
-  //       urlIcon = "https://cdn1.iconfinder.com/data/icons/grocery-14/64/supermarket-shop-store-online_store-commerce-512.png"; break;
-  //     }
-  //     case "accommodation units": {
-  //       url = "https://services7.arcgis.com/v0CEu87DMHNQuNtr/arcgis/rest/services/Unitati_cazare/FeatureServer";
-  //       urlIcon = "https://cdn1.iconfinder.com/data/icons/emoji-122/64/sleep-emoji-emoticon-feeling-sleeping-face-512.png"; break;
-  //     }
-  //     case "tourist attractions": {
-  //       url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/tourist_attractions_in_romania/FeatureServer";
-  //       urlIcon = "https://cdn4.iconfinder.com/data/icons/hotel-services-46/64/map-tourist-destination-direction-attraction-512.png"; break;
-  //     }
-  //     case "natural attractions": {
-  //       url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/atractii_naturale/FeatureServer";
-  //       urlIcon = "https://cdn4.iconfinder.com/data/icons/location-flat/64/Location-map-pin-attractions-favorite-place-512.png"; break;
-  //     }
-  //     case "natural parks": {
-  //       url = "https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Parcuri_Naturale_RO/FeatureServer";
-  //       urlIcon = "https://cdn4.iconfinder.com/data/icons/landscape-filled/64/landscape_land_terrain-07-512.png"; break;
-  //     }
-  //     case "virgin forests": {
-  //       url = "https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Paduri/FeatureServer";
-  //       urlIcon = "https://cdn3.iconfinder.com/data/icons/tree-42/64/25-tree-garden-yard-gardening-botanical-512.png"; break;
-  //     }
-  //     default: { break; }
-  //   }
-
-  //   const button = document.createElement('button');
-  //   button.innerHTML = `<img src=${urlIcon} alt="Icon" style="width: 20px; height: 20px;"/>`;
-  //   button.className = 'esri-widget--button esri-widget esri-interactive';
-
-  //   button.addEventListener('click', () => {
-  //     const renderer = new SimpleRenderer({
-  //       symbol: new PictureMarkerSymbol({
-  //         url: urlIcon,
-  //         width: '22px',
-  //         height: '22px'
-  //       })
-  //     });
-  //     var layer: __esri.FeatureLayer = new FeatureLayer({
-  //       url: url,
-  //       renderer: renderer
-  //     });
-  //     this.map.add(layer);
-
-  //     // const legend = new Legend({
-  //     //   view: this.view,
-  //     // });
-  //     // this.view.ui.add(legend, 'bottom-right');
-
-  //     const popupTemplate = new PopupTemplate({
-  //       title: '{Name}', // Replace with the actual attribute name
-  //       content: [
-  //         {
-  //           type: 'fields',
-  //           fieldInfos: [
-  //             {
-  //               fieldName: 'business_status',
-  //               label: 'Business Status',
-  //             },
-  //             {
-  //               fieldName: 'formatted_address',
-  //               label: 'Formatted Address',
-  //             },
-  //             {
-  //               fieldName: 'place_id',
-  //               label: 'Place ID',
-  //             },
-  //             {
-  //               fieldName: 'price_level',
-  //               label: 'Price Level',
-  //             },
-  //             {
-  //               fieldName: 'rating',
-  //               label: 'Rating',
-  //             },
-  //             {
-  //               fieldName: 'types',
-  //               label: 'Types',
-  //             },
-  //             {
-  //               fieldName: 'url',
-  //               label: 'URL',
-  //             },
-  //             {
-  //               fieldName: 'user_ratings_total',
-  //               label: 'User Ratings Total',
-  //             },
-  //           ],
-  //         },
-  //       ],
-  //     });
-  //     layer.popupTemplate = popupTemplate;
-
-  //   });
-
-  //   this.view.ui.add(button, 'bottom-right');
-
-  //   this.showPopup(name, button);
-  // }
-
   addRouter() {
     const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
 
@@ -832,7 +731,8 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     var lat2 = selectedObject.lat2;
     var lng2 = selectedObject.lng2;
     var name = selectedText;
-    // var reviews = selectedObject.reviews;
+    var dist = 0;
+
     type Review = {
       stars: number;
       text: string;
@@ -919,32 +819,35 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         });
 
         sum = sum * 1.609344;
+        dist = sum;
         console.log('dist (km) = ', sum);
         this.view.ui.empty("top-right");
         this.view.ui.add(directions, "top-right");
+        this.routePopup(name, reviews, dist);
       }
     }).catch((error: any) => {
       console.log(error);
     });
-
-    this.routePopup(name, reviews);
   }
 
-  routePopup(name: string, reviews: any) {
+  routePopup(name: string, reviews: any, dist: number) {
+    console.log("mda " + dist);
     // Add a click event listener for the point
     this.view.on('pointer-move', (event) => {
       const hoveredPoint = this.view.toMap({ x: event.x, y: event.y });
-     // console.log(this.startPoint.longitude.toFixed(2), hoveredPoint.longitude.toFixed(2), this.startPoint.latitude.toFixed(2), hoveredPoint.latitude.toFixed(2));
+      // console.log(this.startPoint.longitude.toFixed(2), hoveredPoint.longitude.toFixed(2), this.startPoint.latitude.toFixed(2), hoveredPoint.latitude.toFixed(2));
       if (this.startPoint.longitude.toFixed(2) == hoveredPoint.longitude.toFixed(2) && this.startPoint.latitude.toFixed(2) == hoveredPoint.latitude.toFixed(2)) {
         this.view.popup.dockEnabled = false;
         this.view.openPopup({
           title: name,
-          content: `<><div style="max-width: 300px; padding: 20px; border-radius: 10px; background-color: #f5f5f5; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-family: 'Arial', sans-serif;">
+          content: `<!DOCTYPE html>
+          <html lang="en"><div style="max-width: 300px; padding: 20px; border-radius: 10px; background-color: #f5f5f5; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-family: 'Arial', sans-serif;">
           <div style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px;">Starting point of ${name}</div>
           <div style="font-weight: bold; margin-bottom: 5px;">Location:
             <div style="margin-left: 20px;">&nbsp;&nbsp;lat: ${this.startPoint.latitude.toFixed(2)}</div>
             <div style="margin-left: 20px;">&nbsp;&nbsp;lng: ${this.startPoint.longitude.toFixed(2)}</div>
           </div>
+          <div style="font-weight: bold; margin-bottom: 5px;">Distance: ${dist.toFixed(2)} km</div>
           <div style="margin-top: 15px; color: #333;" class="popup-reviews">
             <p style="font-weight: bold; margin-bottom: 5px;">Reviews:</p>
             <ul style="list-style: none; padding: 0;">
@@ -957,7 +860,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
               `).join('')}
             </ul>
           </div>
-          <button onclick="openModalReview()">Add a review</button>
+          <button btn btn-primary (click)="openModuleReview()">Add a review</button>
         </div></>`,
           location: this.startPoint
         });
@@ -965,36 +868,45 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         this.view.closePopup();
         this.view.popup.dockEnabled = true;
       }
-        // else {
-        //   if (this.destinationPoint.longitude.toFixed(3) == hoveredPoint.longitude.toFixed(3) && this.destinationPoint.latitude.toFixed(3) == hoveredPoint.latitude.toFixed(3))
-        //     this.view.openPopup({
-        //       title: name,
-        //       content: `<div style="max-width: 300px; padding: 20px; border-radius: 10px; background-color: #f5f5f5; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-family: 'Arial', sans-serif;">
-        //       <div style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px;">Destination point of ${name}</div>
-        //       <div style="font-weight: bold; margin-bottom: 5px;">Location:
-        //         <div style="margin-left: 20px;">&nbsp;&nbsp;lat: ${this.destinationPoint.latitude.toFixed(3)}</div>
-        //         <div style="margin-left: 20px;">&nbsp;&nbsp;lng: ${this.destinationPoint.longitude.toFixed(3)}</div>
-        //       </div>
-        //       <div style="margin-top: 15px; color: #333;" class="popup-reviews">
-        //         <p style="font-weight: bold; margin-bottom: 5px;">Reviews:</p>
-        //         <ul style="list-style: none; padding: 0;">
-        //           ${reviews.map((review, index) => `
-        //             <li style="margin-bottom: 15px;">
-        //               <span style="font-weight: bold; margin-right: 5px; color: #00897b;">Review ${index + 1}:</span><br>
-        //               <span style="color: #fbc02d; font-weight: bold;">Rating: ${review.stars} stars</span><br>
-        //               <span style="color: #666;">"${review.text}"</span>
-        //             </li>
-        //           `).join('')}
-        //         </ul>
-        //       </div>
-        //     </div>`,
-        //       location: this.destinationPoint
-        //     });
+      // else {
+      //   if (this.destinationPoint.longitude.toFixed(3) == hoveredPoint.longitude.toFixed(3) && this.destinationPoint.latitude.toFixed(3) == hoveredPoint.latitude.toFixed(3))
+      //     this.view.openPopup({
+      //       title: name,
+      //       content: `<div style="max-width: 300px; padding: 20px; border-radius: 10px; background-color: #f5f5f5; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-family: 'Arial', sans-serif;">
+      //       <div style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px;">Destination point of ${name}</div>
+      //       <div style="font-weight: bold; margin-bottom: 5px;">Location:
+      //         <div style="margin-left: 20px;">&nbsp;&nbsp;lat: ${this.destinationPoint.latitude.toFixed(3)}</div>
+      //         <div style="margin-left: 20px;">&nbsp;&nbsp;lng: ${this.destinationPoint.longitude.toFixed(3)}</div>
+      //       </div>
+      //       <div style="margin-top: 15px; color: #333;" class="popup-reviews">
+      //         <p style="font-weight: bold; margin-bottom: 5px;">Reviews:</p>
+      //         <ul style="list-style: none; padding: 0;">
+      //           ${reviews.map((review, index) => `
+      //             <li style="margin-bottom: 15px;">
+      //               <span style="font-weight: bold; margin-right: 5px; color: #00897b;">Review ${index + 1}:</span><br>
+      //               <span style="color: #fbc02d; font-weight: bold;">Rating: ${review.stars} stars</span><br>
+      //               <span style="color: #666;">"${review.text}"</span>
+      //             </li>
+      //           `).join('')}
+      //         </ul>
+      //       </div>
+      //     </div>`,
+      //       location: this.destinationPoint
+      //     });
 
-    //   }       else {
-    //     this.view.closePopup();
-    // }
-     });
+      //   }       else {
+      //     this.view.closePopup();
+      // }
+    });
+  }
+
+  openModalReview() {
+    this.matDialog.open(ReviewComponent, {
+      "width": '600px',
+      "maxHeight": '90vh',
+      "data": "John",
+      "autoFocus": false
+    });
   }
 
   disconnectFirebase() {
@@ -1024,15 +936,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       else if (type === "all")
         this.dropDownElement.appendChild(newRoute);
     }
-  }
-
-  openModalReview() {
-    this.matDialog.open(ReviewComponent, {
-      "width": '6000px',
-      "maxHeight": '90vh',
-      "data": "John",
-      "autoFocus": true
-    });
   }
 
   ngOnInit() {
