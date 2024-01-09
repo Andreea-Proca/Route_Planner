@@ -61,6 +61,10 @@ import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
 import PopupTemplate from "@arcgis/core/PopupTemplate.js";
 import Legend from '@arcgis/core/widgets/Legend';
 
+import LayerList from "@arcgis/core/widgets/LayerList.js";
+import { MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { ReviewComponent } from "../review/review.component";
+
 @Component({
   selector: "app-esri-map",
   templateUrl: "./esri-map.component.html",
@@ -92,6 +96,7 @@ import Legend from '@arcgis/core/widgets/Legend';
 // const virgin_forestsLayer = new FeatureLayer({
 //   url: 'https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Paduri/FeatureServer',
 // });
+
 
 export class EsriMapComponent implements OnInit, OnDestroy {
   // The <div> where we will place the map
@@ -136,10 +141,14 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
   routeForm: FormGroup;
   legendOn: boolean = true;
+  layerOn = true;
+  layerList: LayerList;
+  routeClickCounter: boolean = false;
 
   constructor(
     private authService: AuthService,
-    private fbs: FirebaseService
+    private fbs: FirebaseService,
+    private matDialog: MatDialog
   ) { }
 
   async initializeMap() {
@@ -219,13 +228,42 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         index: 0
       });
 
+      this.layerList = new LayerList({
+        view: this.view
+      });
+      const buttonLayer = document.createElement('button');
+      buttonLayer.innerHTML = `<img src=${"https://cdn3.iconfinder.com/data/icons/font-awesome-solid/512/list-check-512.png"} alt="Icon" style="width: 20px; height: 20px;"/>`;
+      buttonLayer.className = 'esri-widget--button esri-widget esri-interactive';
+      buttonLayer.addEventListener('click', () => {
+        if (this.layerOn) {
+          this.view.ui.add(this.layerList, {
+            position: "top-right"
+          });
+        } else {
+          this.view.ui.remove(this.layerList);
+        }
+        this.layerOn = !this.layerOn;
+      });
+      this.view.ui.add(buttonLayer, 'top-right');
+      this.showPopup("Layer list", buttonLayer);
+
+
+      // this.buttonLayer("medical unit");
+      // this.buttonLayer("food store");
+      // this.buttonLayer("store");
+      // this.buttonLayer("accommodation units");
+      // this.buttonLayer("tourist attractions");
+      // this.buttonLayer("natural attraction");
+      // this.buttonLayer("natural parks");
+      // this.buttonLayer("virgin forests");
+
       const legend = new Legend({
         view: this.view,
       });
       const buttonLegend = document.createElement('button');
       buttonLegend.innerHTML = `<img src=${"https://cdn3.iconfinder.com/data/icons/education-62/128/open-textbook-512.png"} alt="Icon" style="width: 20px; height: 20px;"/>`;
       buttonLegend.className = 'esri-widget--button esri-widget esri-interactive';
-      buttonLegend.addEventListener('click', () => { 
+      buttonLegend.addEventListener('click', () => {
         if (this.legendOn) {
           this.view.ui.add(legend, 'bottom-left');
         } else {
@@ -244,21 +282,22 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/train-station.png", "train station", "train-station");
       this.buttonFunc("https://cdn.arcgis.com/sharing/rest/content/items/220936cc6ed342c9937abd8f180e7d1e/resources/styles/thumbnails/grocery-store.png", "grocery", "grocery-store");
 
-      this.buttonLayer("medical unit");
-      this.buttonLayer("food store");
-      this.buttonLayer("store");
-      this.buttonLayer("accommodation units");
-      this.buttonLayer("tourist attractions");
-      this.buttonLayer("natural attraction");
-      this.buttonLayer("natural parks");
-      this.buttonLayer("virgin forests");
+      this.buttonLayer("Medical units");
+      this.buttonLayer("Restaurants");
+      this.buttonLayer("Stores");
+      this.buttonLayer("Hotels and hostels");
+      this.buttonLayer("Tourist attractions");
+      this.buttonLayer("Natural attractions");
+      this.buttonLayer("Parks");
+      this.buttonLayer("Forests");
+      this.buttonLayer("Rivers");
 
-      const button = document.createElement('button');
-      button.innerHTML = `<img src=${"https://cdn3.iconfinder.com/data/icons/mother-earth-day-6/64/Recycle_bin-trash_can-trash_bin-ecology-garbage-512.png"} alt="Icon" style="width: 20px; height: 20px;"/>`;
-      button.className = 'esri-widget--button esri-widget esri-interactive';
-      button.addEventListener('click', () => { this.map.removeAll(); this.addGraphicLayers(); });
-      this.view.ui.add(button, 'bottom-right');
-      this.showPopup("remove all filters", button);
+      // const button = document.createElement('button');
+      // button.innerHTML = `<img src=${"https://cdn3.iconfinder.com/data/icons/mother-earth-day-6/64/Recycle_bin-trash_can-trash_bin-ecology-garbage-512.png"} alt="Icon" style="width: 20px; height: 20px;"/>`;
+      // button.className = 'esri-widget--button esri-widget esri-interactive';
+      // button.addEventListener('click', () => { this.map.removeAll(); this.addGraphicLayers(); });
+      // this.view.ui.add(button, 'bottom-left');
+      // this.showPopup("remove all filters", button);
 
       this.view.when(() => {
         console.log("ArcGIS map loaded");
@@ -275,7 +314,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       await this.view.when(); // wait for map to load
       console.log("ArcGIS map loaded");
       console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
-      this.addRouter();
+      //this.addRouter();
       return this.view;
     } catch (error) {
       console.log("EsriLoader: ", error);
@@ -434,117 +473,190 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   }
 
   buttonLayer(name: string) {
-    var url = "";
     var urlIcon = "";
+    var group = "";
     switch (name) {
-      case "medical unit": {
-        url = "https://services.arcgis.com/IjJbzDQF4hOiNl87/arcgis/rest/services/medical_punct/FeatureServer/0";
+      case "Medical units": {
         urlIcon = "https://cdn4.iconfinder.com/data/icons/hospital-element-1/64/first_aid_kit-healthcare-medical-first_aid-medical_equipment-hospital-512.png"; break;
       }
-      case "food store": {
-        url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/restaurante_bune_romania/FeatureServer/0";
-        urlIcon = "https://cdn1.iconfinder.com/data/icons/grocery-14/64/paper_bag-market-shopping-food-water-grocery_bag-512.png"; break;
+      case "Restaurants": {
+        urlIcon = "https://cdn1.iconfinder.com/data/icons/grocery-14/64/shopping_basket-basket-shopping_store-supermarkets-food-512.png"; break;
       }
-      case "store": {
-        url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/locuri_shopping_romania/FeatureServer";
+      case "Stores": {
         urlIcon = "https://cdn1.iconfinder.com/data/icons/grocery-14/64/supermarket-shop-store-online_store-commerce-512.png"; break;
       }
-      case "accommodation units": {
-        url = "https://services7.arcgis.com/v0CEu87DMHNQuNtr/arcgis/rest/services/Unitati_cazare/FeatureServer";
+      case "Hotels and hostels": {
         urlIcon = "https://cdn1.iconfinder.com/data/icons/emoji-122/64/sleep-emoji-emoticon-feeling-sleeping-face-512.png"; break;
       }
-      case "tourist attractions": {
-        url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/tourist_attractions_in_romania/FeatureServer";
+      case "Tourist attractions": {
         urlIcon = "https://cdn4.iconfinder.com/data/icons/hotel-services-46/64/map-tourist-destination-direction-attraction-512.png"; break;
       }
-      case "natural attractions": {
-        url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/atractii_naturale/FeatureServer";
+      case "Natural attractions": {
+        group = "Nature attarctions";
         urlIcon = "https://cdn4.iconfinder.com/data/icons/location-flat/64/Location-map-pin-attractions-favorite-place-512.png"; break;
       }
-      case "natural parks": {
-        url = "https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Parcuri_Naturale_RO/FeatureServer";
+      case "Parks": {
+        group = "Nature attractions";
         urlIcon = "https://cdn4.iconfinder.com/data/icons/landscape-filled/64/landscape_land_terrain-07-512.png"; break;
       }
-      case "virgin forests": {
-        url = "https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Paduri/FeatureServer";
+      case "Forests": {
+        group = "Nature attractions";
         urlIcon = "https://cdn3.iconfinder.com/data/icons/tree-42/64/25-tree-garden-yard-gardening-botanical-512.png"; break;
+      }
+      case "Rivers": {
+        group = "Nature attractions";
+        urlIcon = "https://cdn3.iconfinder.com/data/icons/landscape-1/402/19-512.png"; break;
       }
       default: { break; }
     }
-
     const button = document.createElement('button');
     button.innerHTML = `<img src=${urlIcon} alt="Icon" style="width: 20px; height: 20px;"/>`;
     button.className = 'esri-widget--button esri-widget esri-interactive';
 
     button.addEventListener('click', () => {
-      const renderer = new SimpleRenderer({
-        symbol: new PictureMarkerSymbol({
-          url: urlIcon,
-          width: '22px',
-          height: '22px'
-        })
+      let desiredLayer;
+      // let groupLayer;
+      // if (group === "") {
+      this.layerList.operationalItems.forEach(layerListItem => {
+        if (layerListItem.title === name) {
+          desiredLayer = layerListItem.layer;
+        }
       });
-      var layer: __esri.FeatureLayer = new FeatureLayer({
-        url: url,
-        renderer: renderer
-      });
-      this.map.add(layer);
+      // } else {
+      //   console.log(group);
+      //   for (const layer of this.map.layers) {
+      //     if (layer.title === group && layer.type === "group") {
+      //       groupLayer = layer;
+      //     }
+      //   }
+      //   for (const layerListItem of groupLayer.layers) {
+      //     if (layerListItem.title === name) {
+      //       desiredLayer = layerListItem.layer;
+      //     }
+      //   }
+      //   console.log(desiredLayer);
+      // }
 
-      // const legend = new Legend({
-      //   view: this.view,
-      // });
-      // this.view.ui.add(legend, 'bottom-right');
-
-      const popupTemplate = new PopupTemplate({
-        title: '{Name}', // Replace with the actual attribute name
-        content: [
-          {
-            type: 'fields',
-            fieldInfos: [
-              {
-                fieldName: 'business_status',
-                label: 'Business Status',
-              },
-              {
-                fieldName: 'formatted_address',
-                label: 'Formatted Address',
-              },
-              {
-                fieldName: 'place_id',
-                label: 'Place ID',
-              },
-              {
-                fieldName: 'price_level',
-                label: 'Price Level',
-              },
-              {
-                fieldName: 'rating',
-                label: 'Rating',
-              },
-              {
-                fieldName: 'types',
-                label: 'Types',
-              },
-              {
-                fieldName: 'url',
-                label: 'URL',
-              },
-              {
-                fieldName: 'user_ratings_total',
-                label: 'User Ratings Total',
-              },
-            ],
-          },
-        ],
-      });
-      layer.popupTemplate = popupTemplate;
-
+      desiredLayer.visible = !desiredLayer.visible;
     });
 
     this.view.ui.add(button, 'bottom-right');
 
     this.showPopup(name, button);
   }
+
+  // buttonLayer(name: string) {
+  //   var url = "";
+  //   var urlIcon = "";
+  //   switch (name) {
+  //     case "medical unit": {
+  //       url = "https://services.arcgis.com/IjJbzDQF4hOiNl87/arcgis/rest/services/medical_punct/FeatureServer/0";
+  //       urlIcon = "https://cdn4.iconfinder.com/data/icons/hospital-element-1/64/first_aid_kit-healthcare-medical-first_aid-medical_equipment-hospital-512.png"; break;
+  //     }
+  //     case "food store": {
+  //       url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/restaurante_bune_romania/FeatureServer/0";
+  //       urlIcon = "https://cdn1.iconfinder.com/data/icons/grocery-14/64/paper_bag-market-shopping-food-water-grocery_bag-512.png"; break;
+  //     }
+  //     case "store": {
+  //       url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/locuri_shopping_romania/FeatureServer";
+  //       urlIcon = "https://cdn1.iconfinder.com/data/icons/grocery-14/64/supermarket-shop-store-online_store-commerce-512.png"; break;
+  //     }
+  //     case "accommodation units": {
+  //       url = "https://services7.arcgis.com/v0CEu87DMHNQuNtr/arcgis/rest/services/Unitati_cazare/FeatureServer";
+  //       urlIcon = "https://cdn1.iconfinder.com/data/icons/emoji-122/64/sleep-emoji-emoticon-feeling-sleeping-face-512.png"; break;
+  //     }
+  //     case "tourist attractions": {
+  //       url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/tourist_attractions_in_romania/FeatureServer";
+  //       urlIcon = "https://cdn4.iconfinder.com/data/icons/hotel-services-46/64/map-tourist-destination-direction-attraction-512.png"; break;
+  //     }
+  //     case "natural attractions": {
+  //       url = "https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/atractii_naturale/FeatureServer";
+  //       urlIcon = "https://cdn4.iconfinder.com/data/icons/location-flat/64/Location-map-pin-attractions-favorite-place-512.png"; break;
+  //     }
+  //     case "natural parks": {
+  //       url = "https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Parcuri_Naturale_RO/FeatureServer";
+  //       urlIcon = "https://cdn4.iconfinder.com/data/icons/landscape-filled/64/landscape_land_terrain-07-512.png"; break;
+  //     }
+  //     case "virgin forests": {
+  //       url = "https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Paduri/FeatureServer";
+  //       urlIcon = "https://cdn3.iconfinder.com/data/icons/tree-42/64/25-tree-garden-yard-gardening-botanical-512.png"; break;
+  //     }
+  //     default: { break; }
+  //   }
+
+  //   const button = document.createElement('button');
+  //   button.innerHTML = `<img src=${urlIcon} alt="Icon" style="width: 20px; height: 20px;"/>`;
+  //   button.className = 'esri-widget--button esri-widget esri-interactive';
+
+  //   button.addEventListener('click', () => {
+  //     const renderer = new SimpleRenderer({
+  //       symbol: new PictureMarkerSymbol({
+  //         url: urlIcon,
+  //         width: '22px',
+  //         height: '22px'
+  //       })
+  //     });
+  //     var layer: __esri.FeatureLayer = new FeatureLayer({
+  //       url: url,
+  //       renderer: renderer
+  //     });
+  //     this.map.add(layer);
+
+  //     // const legend = new Legend({
+  //     //   view: this.view,
+  //     // });
+  //     // this.view.ui.add(legend, 'bottom-right');
+
+  //     const popupTemplate = new PopupTemplate({
+  //       title: '{Name}', // Replace with the actual attribute name
+  //       content: [
+  //         {
+  //           type: 'fields',
+  //           fieldInfos: [
+  //             {
+  //               fieldName: 'business_status',
+  //               label: 'Business Status',
+  //             },
+  //             {
+  //               fieldName: 'formatted_address',
+  //               label: 'Formatted Address',
+  //             },
+  //             {
+  //               fieldName: 'place_id',
+  //               label: 'Place ID',
+  //             },
+  //             {
+  //               fieldName: 'price_level',
+  //               label: 'Price Level',
+  //             },
+  //             {
+  //               fieldName: 'rating',
+  //               label: 'Rating',
+  //             },
+  //             {
+  //               fieldName: 'types',
+  //               label: 'Types',
+  //             },
+  //             {
+  //               fieldName: 'url',
+  //               label: 'URL',
+  //             },
+  //             {
+  //               fieldName: 'user_ratings_total',
+  //               label: 'User Ratings Total',
+  //             },
+  //           ],
+  //         },
+  //       ],
+  //     });
+  //     layer.popupTemplate = popupTemplate;
+
+  //   });
+
+  //   this.view.ui.add(button, 'bottom-right');
+
+  //   this.showPopup(name, button);
+  // }
 
   addRouter() {
     const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
@@ -720,6 +832,14 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     var lat2 = selectedObject.lat2;
     var lng2 = selectedObject.lng2;
     var name = selectedText;
+    // var reviews = selectedObject.reviews;
+    type Review = {
+      stars: number;
+      text: string;
+    };
+
+    var reviews: Array<Review>;
+    reviews = selectedObject.reviews;
 
     var point1 = {
       latitude: lat1,
@@ -788,9 +908,9 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
         let sum = 0;
         // Show each direction
-        const direction = document.createElement("");
-        direction.innerHTML = "Directions:";
-        directions.appendChild(direction);
+        // const direction = document.createElement(""); //problem
+        // direction.innerHTML = "Directions:";
+        // directions.appendChild(direction);
         features.forEach((result: any, i: any) => {
           sum += parseFloat(result.attributes.length);
           const direction = document.createElement("li");
@@ -807,31 +927,74 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       console.log(error);
     });
 
-    this.routePopup(name);
+    this.routePopup(name, reviews);
   }
 
-  routePopup(name: string) {
+  routePopup(name: string, reviews: any) {
     // Add a click event listener for the point
     this.view.on('pointer-move', (event) => {
       const hoveredPoint = this.view.toMap({ x: event.x, y: event.y });
-      //console.log(this.startPoint.longitude, hoveredPoint.longitude, this.startPoint.latitude, hoveredPoint.latitude);
-      if (this.startPoint.longitude.toFixed(3) == hoveredPoint.longitude.toFixed(3) && this.startPoint.latitude.toFixed(3) == hoveredPoint.latitude.toFixed(3))
+     // console.log(this.startPoint.longitude.toFixed(2), hoveredPoint.longitude.toFixed(2), this.startPoint.latitude.toFixed(2), hoveredPoint.latitude.toFixed(2));
+      if (this.startPoint.longitude.toFixed(2) == hoveredPoint.longitude.toFixed(2) && this.startPoint.latitude.toFixed(2) == hoveredPoint.latitude.toFixed(2)) {
+        this.view.popup.dockEnabled = false;
         this.view.openPopup({
           title: name,
-          content: `<div>Starting point of ${name}</div> <div>Location: <div>&nbsp;&nbsp;lat: ${this.startPoint.latitude.toFixed(3)},</div><div>&nbsp;&nbsp;lng: ${this.startPoint.longitude.toFixed(3)}</div> </div>`,
+          content: `<><div style="max-width: 300px; padding: 20px; border-radius: 10px; background-color: #f5f5f5; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-family: 'Arial', sans-serif;">
+          <div style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px;">Starting point of ${name}</div>
+          <div style="font-weight: bold; margin-bottom: 5px;">Location:
+            <div style="margin-left: 20px;">&nbsp;&nbsp;lat: ${this.startPoint.latitude.toFixed(2)}</div>
+            <div style="margin-left: 20px;">&nbsp;&nbsp;lng: ${this.startPoint.longitude.toFixed(2)}</div>
+          </div>
+          <div style="margin-top: 15px; color: #333;" class="popup-reviews">
+            <p style="font-weight: bold; margin-bottom: 5px;">Reviews:</p>
+            <ul style="list-style: none; padding: 0;">
+              ${reviews.map((review, index) => `
+                <li style="margin-bottom: 15px;">
+                  <span style="font-weight: bold; margin-right: 5px; color: #00897b;">Review ${index + 1}:</span><br>
+                  <span style="color: #fbc02d; font-weight: bold;">Rating: ${review.stars} stars</span><br>
+                  <span style="color: #666;">"${review.text}"</span>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+          <button onclick="openModalReview()">Add a review</button>
+        </div></>`,
           location: this.startPoint
         });
-      else {
-        if (this.destinationPoint.longitude.toFixed(3) == hoveredPoint.longitude.toFixed(3) && this.destinationPoint.latitude.toFixed(3) == hoveredPoint.latitude.toFixed(3))
-          this.view.openPopup({
-            title: name,
-            content: `<div>Destination point of ${name}</div> <div>Location: <div>&nbsp;&nbsp;lat: ${this.destinationPoint.latitude.toFixed(3)},</div><div>&nbsp;&nbsp;lng: ${this.destinationPoint.longitude.toFixed(3)}</div> </div>`,
-            location: this.destinationPoint
-          });
-        else
-          this.view.closePopup();
+      } else {
+        this.view.closePopup();
+        this.view.popup.dockEnabled = true;
       }
-    });
+        // else {
+        //   if (this.destinationPoint.longitude.toFixed(3) == hoveredPoint.longitude.toFixed(3) && this.destinationPoint.latitude.toFixed(3) == hoveredPoint.latitude.toFixed(3))
+        //     this.view.openPopup({
+        //       title: name,
+        //       content: `<div style="max-width: 300px; padding: 20px; border-radius: 10px; background-color: #f5f5f5; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-family: 'Arial', sans-serif;">
+        //       <div style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px;">Destination point of ${name}</div>
+        //       <div style="font-weight: bold; margin-bottom: 5px;">Location:
+        //         <div style="margin-left: 20px;">&nbsp;&nbsp;lat: ${this.destinationPoint.latitude.toFixed(3)}</div>
+        //         <div style="margin-left: 20px;">&nbsp;&nbsp;lng: ${this.destinationPoint.longitude.toFixed(3)}</div>
+        //       </div>
+        //       <div style="margin-top: 15px; color: #333;" class="popup-reviews">
+        //         <p style="font-weight: bold; margin-bottom: 5px;">Reviews:</p>
+        //         <ul style="list-style: none; padding: 0;">
+        //           ${reviews.map((review, index) => `
+        //             <li style="margin-bottom: 15px;">
+        //               <span style="font-weight: bold; margin-right: 5px; color: #00897b;">Review ${index + 1}:</span><br>
+        //               <span style="color: #fbc02d; font-weight: bold;">Rating: ${review.stars} stars</span><br>
+        //               <span style="color: #666;">"${review.text}"</span>
+        //             </li>
+        //           `).join('')}
+        //         </ul>
+        //       </div>
+        //     </div>`,
+        //       location: this.destinationPoint
+        //     });
+
+    //   }       else {
+    //     this.view.closePopup();
+    // }
+     });
   }
 
   disconnectFirebase() {
@@ -850,7 +1013,9 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         lat1: userRoutes[i].lat1,
         lng1: userRoutes[i].lng1,
         lat2: userRoutes[i].lat2,
-        lng2: userRoutes[i].lng2
+        lng2: userRoutes[i].lng2,
+        reviews: userRoutes[i].reviews,
+        user: userRoutes[i].user
       };
       newRoute.text = userRoutes[i].name;
       newRoute.value = JSON.stringify(routePoints);
@@ -859,6 +1024,15 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       else if (type === "all")
         this.dropDownElement.appendChild(newRoute);
     }
+  }
+
+  openModalReview() {
+    this.matDialog.open(ReviewComponent, {
+      "width": '6000px',
+      "maxHeight": '90vh',
+      "data": "John",
+      "autoFocus": true
+    });
   }
 
   ngOnInit() {

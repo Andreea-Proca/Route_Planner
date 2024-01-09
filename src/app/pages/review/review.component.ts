@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, Inject } from '@angular/core';
 import { EsriMapComponent } from 'src/app/pages/esri-map/esri-map.component';
 import { FirebaseService, IRouteItem, ITestItem } from "src/app/services/database/firebase";
+import { MAT_DIALOG_DATA } from '@angular/material/dialog'; 
 
 @Component({
   selector: 'app-review',
@@ -19,7 +20,8 @@ export class ReviewComponent implements OnInit {
   reviewError = false;
 
   constructor(
-    private fbs: FirebaseService
+    private fbs: FirebaseService,
+    @Inject(MAT_DIALOG_DATA) public anyVariable
   ) { }
 
 
