@@ -62,7 +62,6 @@ import("@arcgis/core/widgets/support/widgetUtils")
   templateUrl: "./esri-map.component.html",
   styleUrls: ["./esri-map.component.scss"]
 })
-
 export class EsriMapComponent implements OnInit, OnDestroy {
   // The <div> where we will place the map
   @ViewChild("mapViewNode", { static: true }) private mapViewEl: ElementRef;
@@ -112,6 +111,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   routeClickCounter: boolean = false;
   isButtonVisible: boolean = false;
   routeGraphic: any;
+  routeName: string;
 
   eventHandler: IHandle;
 
@@ -647,6 +647,8 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       this.view.graphics.add(graphic);
       if (i == 0)
         this.startPoint = esriPoints[i];
+      if (i == esriPoints.length - 1)
+        this.destinationPoint = esriPoints[i];
     }
 
     type Review = {
@@ -657,6 +659,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     var reviews: Array<Review>;
     reviews = selectedObject.reviews;
     console.log(selectedText, reviews);
+    this.routeName = selectedText;
     this.routePopup(selectedText, reviews, 0);
   }
 
@@ -913,7 +916,12 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   openModalRouting() {
     this.matDialog.open(RoutingServiceComponent, {
       "width": '1000px',
-      "height": '600px'
+      "height": '600px',
+      data: {
+        name: this.routeName,
+        startPoint: this.startPoint,
+        destinationPoint: this.destinationPoint
+      }
     });
   }
 
