@@ -22,7 +22,7 @@ import {
 import esri = __esri; // Esri TypeScript Types
 
 import { Subscription } from "rxjs";
-import { FirebaseService, IRouteItem, ITestItem } from "src/app/services/database/firebase";
+import { FirebaseService, IRouteItem, ITestItem, IPoint } from "src/app/services/database/firebase";
 import { FirebaseMockService } from "src/app/services/database/firebase-mock";
 import { getAuth } from "firebase/auth";
 import Config from '@arcgis/core/config';
@@ -42,6 +42,7 @@ import Search from '@arcgis/core/widgets/Search.js';
 import Locate from "@arcgis/core/widgets/Locate.js";
 import Compass from "@arcgis/core/widgets/Compass.js";
 import Fullscreen from "@arcgis/core/widgets/Fullscreen.js";
+import Sketch from "@arcgis/core/widgets/Sketch.js"
 
 
 import { geocode } from "@esri/arcgis-rest-geocoding"
@@ -64,6 +65,10 @@ import Legend from '@arcgis/core/widgets/Legend';
 import LayerList from "@arcgis/core/widgets/LayerList.js";
 import { MatDialogRef, MatDialog } from '@angular/material/dialog';
 import { ReviewComponent } from "../review/review.component";
+
+import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
+import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
+import Polyline from "@arcgis/core/geometry/Polyline";
 
 import("@arcgis/core/widgets/support/widgetUtils")
   .then((widgetUtilsModule) => {
@@ -150,12 +155,17 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   compassWidget: Compass;
   fullscreenWidget: Fullscreen;
   locatorWidget: locator;
+  sketchWidget: Sketch;
 
   routeForm: FormGroup;
   legendOn: boolean = true;
   layerOn = true;
   layerList: LayerList;
   routeClickCounter: boolean = false;
+  isButtonVisible: boolean = false;
+  routeGraphic: any;
+
+  eventHandler: IHandle;
 
   constructor(
     private authService: AuthService,
@@ -239,6 +249,29 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         position: "top-left",
         index: 0
       });
+
+      // create a new sketch widget
+      this.sketchWidget = new Sketch({
+        view: this.view,
+        layer: this.graphicsLayer
+      });
+      this.view.ui.add(this.sketchWidget, {
+        position: "top-right",
+        index: 0
+      });
+
+      if (this.sketchWidget != null) {
+        this.sketchWidget.on('create', (event) => {
+          if (event.state === 'complete') {
+            this.routeGraphic = event.graphic;
+          }
+        });
+      }
+
+      // // Example: Accessing graphics
+      // const graphics = this.sketchWidget.layer.graphics.toArray();
+      // console.log("All graphics:", graphics);
+
 
       this.layerList = new LayerList({
         view: this.view
@@ -675,31 +708,42 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this.fbs.addPointItem(this.view.center.latitude, this.view.center.longitude);
   }
 
-  viewUserRoutes() {
-
-    // console.log(userRoutes);
-  }
-
   addRouteItem() {
     console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
-    if (this.startPoint !== null && this.destinationPoint !== null) {
-      this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude, this.destinationPoint.latitude, this.destinationPoint.longitude, this.routeForm.value.name, this.authService.userData.uid);
-      // const newRoute = document.createElement("option");
-      // const routePoints = {
-      //   lat1: this.startPoint.latitude,
-      //   lng1: this.startPoint.longitude,
-      //   lat2: this.destinationPoint.latitude,
-      //   lng2: this.destinationPoint.longitude
-      // };
-      // newRoute.text = "traseu1";
-      // newRoute.value = JSON.stringify(routePoints);
-      //this.dropDownElement.appendChild(newRoute);
-      // this.dropDownUserElement.appendChild(newRoute);
+    var points = new Array<IPoint>;
+    console.log("graphic:", this.routeGraphic.geometry.paths);
+    var paths = this.routeGraphic.geometry.paths[0];
+    for (let i = 0; i < paths.length; i++) {
+      let point = {
+        latitude: paths[i][1],
+        longitude: paths[i][0]
+      };
+
+      var geoPoint = webMercatorUtils.webMercatorToGeographic(new Point(point)) as __esri.Point;
+      let iPoint: IPoint = {
+        x: geoPoint.longitude,
+        y: geoPoint.latitude
+      }
+      console.log("iPoint: ", iPoint);
+      points.push(iPoint);
+    }
+
+    // if (this.startPoint !== null && this.destinationPoint !== null && this.routeForm.value.name != '') {
+    //   this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude, this.destinationPoint.latitude, this.destinationPoint.longitude, this.routeForm.value.name, this.authService.userData.uid);
+
+    // }
+    if (this.routeForm.value.name != '') {
+      this.fbs.addRouteItem(points, this.routeForm.value.name, this.authService.userData.uid);
+
     }
     this.routeForm.get('name').reset();
 
     console.log("aici");
     console.log(getAuth());
+    var button = document.getElementById('setActive');
+    if (button) {
+      button.style.display = 'none';
+    }
     // console.log(this.fbs.getChangeFeedList());
   }
 
@@ -709,7 +753,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     if (this.selectedDropDown === "userRoutes") {
       dropDownSelectElement = document.getElementById('userRoutes') as HTMLSelectElement;
     }
-
 
     // Get the selected option
     const selectedOption = dropDownSelectElement.options[dropDownSelectElement.selectedIndex];
@@ -725,14 +768,58 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     // Parse the JSON string to an object
     var selectedObject = JSON.parse(selectedValue);
 
-    // Access the properties
-    var lat1 = selectedObject.lat1;
-    var lng1 = selectedObject.lng1;
-    var lat2 = selectedObject.lat2;
-    var lng2 = selectedObject.lng2;
-    var name = selectedText;
-    var dist = 0;
+    var points: Array<IPoint>;
+    points = selectedObject.points;
 
+    this.view.graphics.removeAll();
+    // this.sketchWidget.destroy();
+    // this.sketchWidget = new Sketch({
+    //   view: this.view,
+    //   layer: this.graphicsLayer
+    // });
+    // this.view.ui.add(this.sketchWidget, {
+    //   position: "top-right",
+    //   index: 0
+    // });
+
+    var esriPoints = points.map(latLong => {
+      return new Point({
+        longitude: latLong.x,
+        latitude: latLong.y
+      });
+    });
+
+    var polyline = new Polyline({
+      paths: [esriPoints.map(point => [point.longitude, point.latitude])]
+    });
+
+    const graphic = new Graphic({
+      symbol: new SimpleLineSymbol({
+        color: "blue",
+        width: 4
+      }),
+      geometry: polyline
+    });
+    this.view.graphics.add(graphic);
+
+    for (let i = 0; i < esriPoints.length; i++) {
+      const graphic = new Graphic({
+        symbol: {
+          type: "simple-marker",
+          color: "white",
+          size: "10px"
+        } as any,
+        geometry: esriPoints[i]
+      });
+      this.view.graphics.add(graphic);
+      if (i == 0)
+        this.startPoint = esriPoints[i];
+    }
+
+    //this.startPoint = esriPoints[0];
+    //this.startPoint.longitude = esriPoints[0].longitude;
+    //this.destinationPoint.latitude = esriPoints[0].latitude;
+    // this.destinationPoint.longitude = esriPoints[0].longitude;
     type Review = {
       stars: number;
       text: string;
@@ -740,19 +827,95 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
     var reviews: Array<Review>;
     reviews = selectedObject.reviews;
+    console.log(selectedText, reviews);
+    this.routePopup(selectedText, reviews, 0);
+  }
 
-    var point1 = {
-      latitude: lat1,
-      longitude: lng1
-    };
+  drawRouteSteps() {
+    let dropDownSelectElement = document.getElementById('routes') as HTMLSelectElement;
+    // Assuming dropDownElement is your dropdown element
+    if (this.selectedDropDown === "userRoutes") {
+      dropDownSelectElement = document.getElementById('userRoutes') as HTMLSelectElement;
+    }
+    // Get the selected option
+    const selectedOption = dropDownSelectElement.options[dropDownSelectElement.selectedIndex];
 
-    var point2 = {
-      latitude: lat2,
-      longitude: lng2
-    };
+    // Access the value and text of the selected option
+    const selectedValue = selectedOption.value;
+    const selectedText = selectedOption.text;
 
-    var mapPoint1 = new Point(point1);
-    var mapPoint2 = new Point(point2);
+    // Now, you can use selectedValue and selectedText as needed
+    console.log('Selected Value:', selectedValue);
+    console.log('Selected Text:', selectedText);
+
+    // Parse the JSON string to an object
+    var selectedObject = JSON.parse(selectedValue);
+
+    var points: Array<IPoint>;
+    points = selectedObject.points;
+
+    // this.view.graphics.removeAll();
+    var esriPoints = points.map(latLong => {
+      return new Point({
+        longitude: latLong.x,
+        latitude: latLong.y
+      });
+    });
+
+    for (let i = 0; i < esriPoints.length - 1; i++) {
+      this.getRoutePart(selectedText, esriPoints[i], esriPoints[i + 1], selectedObject.reviews);
+    }
+  }
+
+  getRoutePart(name: string, mapPoint1: Point, mapPoint2: Point, rev: any) {
+    // let dropDownSelectElement = document.getElementById('routes') as HTMLSelectElement;
+    // // Assuming dropDownElement is your dropdown element
+    // if (this.selectedDropDown === "userRoutes") {
+    //   dropDownSelectElement = document.getElementById('userRoutes') as HTMLSelectElement;
+    // }
+
+    // // Get the selected option
+    // const selectedOption = dropDownSelectElement.options[dropDownSelectElement.selectedIndex];
+
+    // // Access the value and text of the selected option
+    // const selectedValue = selectedOption.value;
+    // const selectedText = selectedOption.text;
+
+    // // Now, you can use selectedValue and selectedText as needed
+    // console.log('Selected Value:', selectedValue);
+    // console.log('Selected Text:', selectedText);
+
+    // // Parse the JSON string to an object
+    // var selectedObject = JSON.parse(selectedValue);
+
+    // // Access the properties
+    // var lat1 = selectedObject.lat1;
+    // var lng1 = selectedObject.lng1;
+    // var lat2 = selectedObject.lat2;
+    // var lng2 = selectedObject.lng2;
+    //var name = selectedText;
+    var dist = 0;
+
+    // type Review = {
+    //   stars: number;
+    //   text: string;
+    // };
+
+    // var reviews: Array<Review>;
+    // reviews = rev.reviews;
+
+    // var point1 = {
+    //   latitude: lat1,
+    //   longitude: lng1
+    // };
+
+    // var point2 = {
+    //   latitude: lat2,
+    //   longitude: lng2
+    // };
+
+    // var mapPoint1 = new Point(point1);
+    // var mapPoint2 = new Point(point2);
 
     this.startPoint = mapPoint1;
     this.destinationPoint = mapPoint2;
@@ -774,7 +937,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     const graphic2 = new Graphic({
       symbol: {
         type: "simple-marker",
-        color: "black",
+        color: "white",
         size: "8px"
       } as any,
       geometry: mapPoint2
@@ -823,51 +986,104 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         console.log('dist (km) = ', sum);
         this.view.ui.empty("top-right");
         this.view.ui.add(directions, "top-right");
-        this.routePopup(name, reviews, dist);
+        //this.routePopup(name, reviews, dist);
       }
     }).catch((error: any) => {
       console.log(error);
     });
   }
 
+  createPopupContent(reviews: any, name: string, dist: number) {
+    const container = document.createElement('div');
+    const htmlContent = `<!DOCTYPE html>
+    <html lang="en"><div style="max-width: 300px; padding: 20px; border-radius: 10px; background-color: #f5f5f5; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-family: 'Arial', sans-serif;">
+    <div style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px;">Starting point of ${name}</div>
+    <div style="font-weight: bold; margin-bottom: 5px;">Location:
+      <div style="margin-left: 20px;">&nbsp;&nbsp;lat: ${this.startPoint.latitude.toFixed(2)}</div>
+      <div style="margin-left: 20px;">&nbsp;&nbsp;lng: ${this.startPoint.longitude.toFixed(2)}</div>
+    </div>
+    <div style="font-weight: bold; margin-bottom: 5px;">Distance: ${dist.toFixed(2)} km</div>
+    <div style="margin-top: 15px; color: #333;" class="popup-reviews">
+      <p style="font-weight: bold; margin-bottom: 5px;">Reviews:</p>
+      <ul style="list-style: none; padding: 0;">
+      ${reviews?.map((review, index) => `
+      <li style="margin-bottom: 15px;">
+        <span style="font-weight: bold; margin-right: 5px; color: #00897b;">Review ${index + 1}:</span><br>
+        <span style="color: #fbc02d; font-weight: bold;">Rating: ${review.stars} stars</span><br>
+        <span style="color: #666;">"${review.text}"</span>
+      </li>
+    `).join('')}
+      </ul>
+    </div>
+  </div>`;
+
+    container.innerHTML = htmlContent;
+    var button = document.createElement('button');
+    button.innerHTML = `<div> Add a review </div>`;
+    button.className = 'esri-widget--button esri-widget esri-interactive';
+    // Set width and height using style properties
+    button.style.width = '150px'; // Set the desired width
+    button.style.height = '40px'; // Set the desired height
+    button.style.padding = '5px';
+    button.style.fontSize = '16px';
+    button.style.marginTop = '10px';
+    button.style.marginLeft = '90px';
+    button.style.color = 'white';
+    button.style.backgroundColor = 'purple';
+    button.style.border = '2px solid black';
+    button.style.borderRadius = '5px';
+
+    // button.style.transform = 'translate(-50%, -50%)';
+
+    // Add a click event listener for the point
+    button.addEventListener('click', () => { this.openModalReview() });
+    container.appendChild(button);
+    return container;
+  }
   routePopup(name: string, reviews: any, dist: number) {
     console.log("mda " + dist);
-    // Add a click event listener for the point
-    this.view.on('pointer-move', (event) => {
+    console.log("Reviews: " + reviews, "Name: " + name);
+    // var button = document.createElement('button');
+    // button.innerHTML = `<div> Add a review </div>`;
+    // button.className = 'esri-widget--button esri-widget esri-interactive';
+    // // Set width and height using style properties
+    // button.style.width = '100px'; // Set the desired width
+    // button.style.height = '40px'; // Set the desired height
+    // button.style.padding = '5px';
+    // button.style.fontSize = '16px';
+    // let htmlCoords = this.view.toScreen(this.startPoint);
+    // button.style.position = 'absolute';
+    // button.style.top = `${htmlCoords.y}px`;
+    // button.style.left = `${htmlCoords.x}px`;
+    // // button.style.transform = 'translate(-50%, -50%)';
+
+    // // Add a click event listener for the point
+    // button.addEventListener('click', () => { this.openModalReview() });
+    if (this.eventHandler) {
+      this.eventHandler.remove();
+      this.eventHandler = null;
+    }
+    this.eventHandler = this.view.on('pointer-move', (event) => {
       const hoveredPoint = this.view.toMap({ x: event.x, y: event.y });
       // console.log(this.startPoint.longitude.toFixed(2), hoveredPoint.longitude.toFixed(2), this.startPoint.latitude.toFixed(2), hoveredPoint.latitude.toFixed(2));
       if (this.startPoint.longitude.toFixed(2) == hoveredPoint.longitude.toFixed(2) && this.startPoint.latitude.toFixed(2) == hoveredPoint.latitude.toFixed(2)) {
         this.view.popup.dockEnabled = false;
         this.view.openPopup({
           title: name,
-          content: `<!DOCTYPE html>
-          <html lang="en"><div style="max-width: 300px; padding: 20px; border-radius: 10px; background-color: #f5f5f5; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-family: 'Arial', sans-serif;">
-          <div style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px;">Starting point of ${name}</div>
-          <div style="font-weight: bold; margin-bottom: 5px;">Location:
-            <div style="margin-left: 20px;">&nbsp;&nbsp;lat: ${this.startPoint.latitude.toFixed(2)}</div>
-            <div style="margin-left: 20px;">&nbsp;&nbsp;lng: ${this.startPoint.longitude.toFixed(2)}</div>
-          </div>
-          <div style="font-weight: bold; margin-bottom: 5px;">Distance: ${dist.toFixed(2)} km</div>
-          <div style="margin-top: 15px; color: #333;" class="popup-reviews">
-            <p style="font-weight: bold; margin-bottom: 5px;">Reviews:</p>
-            <ul style="list-style: none; padding: 0;">
-              ${reviews.map((review, index) => `
-                <li style="margin-bottom: 15px;">
-                  <span style="font-weight: bold; margin-right: 5px; color: #00897b;">Review ${index + 1}:</span><br>
-                  <span style="color: #fbc02d; font-weight: bold;">Rating: ${review.stars} stars</span><br>
-                  <span style="color: #666;">"${review.text}"</span>
-                </li>
-              `).join('')}
-            </ul>
-          </div>
-          <button btn btn-primary (click)="openModuleReview()">Add a review</button>
-        </div></>`,
+          content: this.createPopupContent(reviews, name, dist),
           location: this.startPoint
         });
+
+        // this.view.ui.add(button);
+        console.log("Name: " + name);
       } else {
         this.view.closePopup();
+        // this.view.ui.remove(button);
+        // this.view.removeHandles();
+        // button.removeEventListener('click', () => { this.openModalReview() });
         this.view.popup.dockEnabled = true;
       }
+      //<button btn btn-primary (click)="openModuleReview()">Add a review</button>
       // else {
       //   if (this.destinationPoint.longitude.toFixed(3) == hoveredPoint.longitude.toFixed(3) && this.destinationPoint.latitude.toFixed(3) == hoveredPoint.latitude.toFixed(3))
       //     this.view.openPopup({
@@ -903,9 +1119,10 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   openModalReview() {
     this.matDialog.open(ReviewComponent, {
       "width": '600px',
-      "maxHeight": '90vh',
-      "data": "John",
-      "autoFocus": false
+      // "maxHeight": '90vh',
+      // "data": "John",
+      //"autoFocus": false
+
     });
   }
 
@@ -922,10 +1139,11 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     for (let i = 0; i < userRoutes.length; i++) {
       const newRoute = document.createElement("option");
       const routePoints = {
-        lat1: userRoutes[i].lat1,
-        lng1: userRoutes[i].lng1,
-        lat2: userRoutes[i].lat2,
-        lng2: userRoutes[i].lng2,
+        // lat1: userRoutes[i].lat1,
+        // lng1: userRoutes[i].lng1,
+        // lat2: userRoutes[i].lat2,
+        // lng2: userRoutes[i].lng2,
+        points: userRoutes[i].points,
         reviews: userRoutes[i].reviews,
         user: userRoutes[i].user
       };
@@ -938,10 +1156,22 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     }
   }
 
+  handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      console.log("key enter works");
+      var button = document.getElementById('setActive');
+      if (button) {
+        button.style.display = 'block';
+      }
+    }
+  }
+
   ngOnInit() {
     // Initialize MapView and return an instance of MapView
     console.log("initializing map");
     console.log(this.authService);
+
+    document.addEventListener('keydown', this.handleKeyDown.bind(this));
 
     this.createRouteForm();
 
@@ -966,6 +1196,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       this.addRoutesInDropdown(routes, "all");
       console.log(routes);
     });
+
     this.initializeMap().then(() => {
       // The map has been initialized
       console.log("mapView ready: ", this.view.ready);
@@ -975,6 +1206,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    document.removeEventListener("keydown", this.handleKeyDown.bind(this));
     if (this.view) {
       // destroy the map view
       this.view.container = null;

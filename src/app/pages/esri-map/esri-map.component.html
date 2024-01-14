@@ -16,7 +16,7 @@
                 <form [formGroup]="routeForm"  (ngSubmit)="addRouteItem()">
                     <mat-form-field appearance="fill" style="background-color:cadetblue; color:black">
                         <mat-label>Name of the route</mat-label>
-                        <input matInput formControlName="name" placeholder="Name of the route" style="color: black;">
+                        <input matInput formControlName="name" placeholder="Add name of the route" style="color: black;">
                     </mat-form-field>
                 </form>
             </mat-list-item>
@@ -25,8 +25,8 @@
                     style="color: white; background-color: #3498db;">Draw route</button>
             </mat-list-item> -->
             <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)="addRouteItem()"
-                    style="color: white; background-color: #3498db;">Save new route</button>
+                <button mat-button mat-button id="setActive" color="primary" class="full-w" (click)="addRouteItem()"
+                    style="display: none; color: white; background-color: #3498db;">Save new route</button>
             </mat-list-item>
             <mat-list-item>
                 <span class="label" style="background-color:blueviolet;">View all routes</span>
@@ -52,6 +52,10 @@
                 <label for="cars" style="color: black;">Choose from your list: </label>
                 <select name="routes" id="userRoutes" (change)="showUserRoutes()">
                 </select>
+            </mat-list-item>
+            <mat-list-item>
+                <button mat-button mat-button color="primary" class="full-w" (click)="drawRouteSteps()"
+                    style="color: white; background-color: #3498db;">Use routing service</button>
             </mat-list-item>
         </mat-list>
     </div>
