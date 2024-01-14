@@ -26,9 +26,6 @@ export class AppComponent {
   }, {
     name: 'Sign Up',
     link: '/sign-up'
-  }, {
-    name: 'Reviews',
-    link: '/review'
   }];
 
   activeTab = this.tabs[0].link;

@@ -1,16 +1,3 @@
-/*
-  Copyright 2019 Esri
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
-
 import {
   Component,
   OnInit,
@@ -23,7 +10,6 @@ import esri = __esri; // Esri TypeScript Types
 
 import { Subscription } from "rxjs";
 import { FirebaseService, IRouteItem, ITestItem, IPoint } from "src/app/services/database/firebase";
-import { FirebaseMockService } from "src/app/services/database/firebase-mock";
 import { getAuth } from "firebase/auth";
 import Config from '@arcgis/core/config';
 import WebMap from '@arcgis/core/WebMap';
@@ -33,7 +19,6 @@ import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Graphic from '@arcgis/core/Graphic';
 import Point from '@arcgis/core/geometry/Point';
 
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
 import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
 import RouteParameters from '@arcgis/core/rest/support/RouteParameters';
 import * as route from "@arcgis/core/rest/route.js";
@@ -44,27 +29,17 @@ import Compass from "@arcgis/core/widgets/Compass.js";
 import Fullscreen from "@arcgis/core/widgets/Fullscreen.js";
 import Sketch from "@arcgis/core/widgets/Sketch.js"
 
-
-import { geocode } from "@esri/arcgis-rest-geocoding"
-import { ApiKeyManager } from "@esri/arcgis-rest-request";
-import { getCategories } from "@esri/arcgis-rest-places";
-import { findPlacesWithinExtent } from "@esri/arcgis-rest-places";
 import * as locator from "@arcgis/core/rest/locator.js";
-import PictureMarkerSymbol from '@arcgis/core/symbols/PictureMarkerSymbol';
 import WebStyleSymbol from '@arcgis/core/symbols/WebStyleSymbol';
-import ActionButton from '@arcgis/core/support/actions/ActionButton.js';
 import { AuthService } from "src/app/services/auth";
-import Popup from "@arcgis/core/widgets/Popup.js";
 
 import { FormControl, FormGroup, Validators } from "@angular/forms";
-import { stringToKeyValue } from "@angular/flex-layout/extended/style/style-transforms";
-import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
-import PopupTemplate from "@arcgis/core/PopupTemplate.js";
 import Legend from '@arcgis/core/widgets/Legend';
 
 import LayerList from "@arcgis/core/widgets/LayerList.js";
-import { MatDialogRef, MatDialog } from '@angular/material/dialog';
+import { MatDialog } from '@angular/material/dialog';
 import { ReviewComponent } from "../review/review.component";
+import { RoutingServiceComponent } from "../routing-service/routing-service.component";
 
 import * as webMercatorUtils from "@arcgis/core/geometry/support/webMercatorUtils";
 import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
@@ -88,33 +63,6 @@ import("@arcgis/core/widgets/support/widgetUtils")
   styleUrls: ["./esri-map.component.scss"]
 })
 
-
-// const medical_unitLayer = new FeatureLayer({
-//   url: 'https://services.arcgis.com/IjJbzDQF4hOiNl87/arcgis/rest/services/medical_punct/FeatureServer/0',
-// });
-// const food_storeLayer = new FeatureLayer({
-//   url: 'https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/restaurante_bune_romania/FeatureServer/0',
-// });
-// const storeLayer = new FeatureLayer({
-//   url: 'https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/locuri_shopping_romania/FeatureServer',
-// });
-// const accommodation_unitsLayer = new FeatureLayer({
-//   url: 'https://services7.arcgis.com/v0CEu87DMHNQuNtr/arcgis/rest/services/Unitati_cazare/FeatureServer',
-// });
-// const tourist_attractionsLayer = new FeatureLayer({
-//   url: 'https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/tourist_attractions_in_romania/FeatureServer',
-// });
-// const natural_attractionsLayer = new FeatureLayer({
-//   url: 'https://services8.arcgis.com/BBQ8y8wlr7sbDPZa/arcgis/rest/services/atractii_naturale/FeatureServer',
-// });
-// const natural_parksLayer = new FeatureLayer({
-//   url: 'https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Parcuri_Naturale_RO/FeatureServer',
-// });
-// const virgin_forestsLayer = new FeatureLayer({
-//   url: 'https://services6.arcgis.com/r68JIXMFLInRYbAg/arcgis/rest/services/Paduri/FeatureServer',
-// });
-
-
 export class EsriMapComponent implements OnInit, OnDestroy {
   // The <div> where we will place the map
   @ViewChild("mapViewNode", { static: true }) private mapViewEl: ElementRef;
@@ -136,7 +84,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
   destinationPoint: Point;
 
   // Attributes
-  zoom = 10;
+  zoom = 7;
   center: Array<number> = [25.009431, 45.944286];
   basemap = "streets-vector";
   loaded = false;
@@ -175,25 +123,17 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
   async initializeMap() {
     try {
-
       // Configure the Map
       const mapProperties: esri.WebMapProperties = {
-        //basemap: this.basemap
         portalItem: {
           id: "6f90bddf9cec4e81aee4e2dcefe7169d"
         }
       };
-      console.log("aici")
-
       Config.apiKey = "AAPKba863a01015c4ac0abf7e38b281f64604o_R5CzYPymg8lQ_DGiRpc00YTXy2pGxe7YsZUU3LmcxW9xrS0eQgEzDywhaJeiP";
 
       this.map = new WebMap(mapProperties);
-
-      //this.addFeatureLayers();
       this.addGraphicLayers();
-
       this.dropDownElement = document.getElementById("routes");
-
       this.addPoint(this.pointCoords[1], this.pointCoords[0], true);
 
       // Initialize the MapView
@@ -223,11 +163,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       });
 
       this.locateWidget = new Locate({
-        view: this.view,   // Attaches the Locate button to the view
-        // graphic: new Graphic({
-        //   symbol: { type: "simple-marker" }  // overwrites the default symbol used for the
-        //   // graphic placed at the location of the user when found
-        // })
+        view: this.view
       });
       this.view.ui.add(this.locateWidget, {
         position: "top-left",
@@ -268,11 +204,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         });
       }
 
-      // // Example: Accessing graphics
-      // const graphics = this.sketchWidget.layer.graphics.toArray();
-      // console.log("All graphics:", graphics);
-
-
       this.layerList = new LayerList({
         view: this.view
       });
@@ -291,16 +222,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       });
       this.view.ui.add(buttonLayer, 'top-right');
       this.showPopup("Layer list", buttonLayer);
-
-
-      // this.buttonLayer("medical unit");
-      // this.buttonLayer("food store");
-      // this.buttonLayer("store");
-      // this.buttonLayer("accommodation units");
-      // this.buttonLayer("tourist attractions");
-      // this.buttonLayer("natural attraction");
-      // this.buttonLayer("natural parks");
-      // this.buttonLayer("virgin forests");
 
       const legend = new Legend({
         view: this.view,
@@ -337,20 +258,11 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       this.buttonLayer("Forests");
       this.buttonLayer("Rivers");
 
-      // const button = document.createElement('button');
-      // button.innerHTML = `<img src=${"https://cdn3.iconfinder.com/data/icons/mother-earth-day-6/64/Recycle_bin-trash_can-trash_bin-ecology-garbage-512.png"} alt="Icon" style="width: 20px; height: 20px;"/>`;
-      // button.className = 'esri-widget--button esri-widget esri-interactive';
-      // button.addEventListener('click', () => { this.map.removeAll(); this.addGraphicLayers(); });
-      // this.view.ui.add(button, 'bottom-left');
-      // this.showPopup("remove all filters", button);
-
       this.view.when(() => {
         console.log("ArcGIS map loaded");
         console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
       });
 
-      // Fires `pointer-move` event when user clicks on "Shift"
-      // key and moves the pointer on the view.
       this.view.on('pointer-move', ["Shift"], (event) => {
         let point = this.view.toMap({ x: event.x, y: event.y });
         console.log("map moved: ", point.longitude, point.latitude);
@@ -359,7 +271,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       await this.view.when(); // wait for map to load
       console.log("ArcGIS map loaded");
       console.log("Map center: " + this.view.center.latitude + ", " + this.view.center.longitude);
-      //this.addRouter();
       return this.view;
     } catch (error) {
       console.log("EsriLoader: ", error);
@@ -374,8 +285,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       var y = rect.top + rect.height / 2;
       var screenPoint = {
         x: x,
-        y: y,
-        // spatialReference: this.view.spatialReference
+        y: y
       };
       var mapPoint = this.view.toMap(screenPoint);
 
@@ -396,7 +306,7 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     const params = {
       address: null,
       categories: [category],
-      location: pt,  // Paris (2.34602,48.85880)
+      location: pt,
       outFields: ["PlaceName", "Place_addr"]
     }
 
@@ -404,7 +314,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       for (let item of results) {
         this.addIcon(item.location.latitude, item.location.longitude, true, icon)
       }
-      //   this.addPoint(48.85877, 2.34612);
       console.log(results)
     });
   }
@@ -413,34 +322,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     this.graphicsLayer = new GraphicsLayer();
     this.map.add(this.graphicsLayer);
   }
-
-  // addFeatureLayers() {
-  //   // Trailheads feature layer (points)
-  //   var trailheadsLayer: __esri.FeatureLayer = new FeatureLayer({
-  //     url:
-  //       "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0"
-  //   });
-
-  //   this.map.add(trailheadsLayer);
-
-  //   // Trails feature layer (lines)
-  //   var trailsLayer: __esri.FeatureLayer = new FeatureLayer({
-  //     url:
-  //       "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0"
-  //   });
-
-  //   this.map.add(trailsLayer, 0);
-
-  //   // Parks and open spaces (polygons)
-  //   var parksLayer: __esri.FeatureLayer = new FeatureLayer({
-  //     url:
-  //       "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0"
-  //   });
-
-  //   this.map.add(parksLayer, 0);
-
-  //   console.log("feature layers added");
-  // }
 
   addPoint(lat: number, lng: number, register: boolean) {
     let point = new Point({
@@ -560,28 +441,11 @@ export class EsriMapComponent implements OnInit, OnDestroy {
 
     button.addEventListener('click', () => {
       let desiredLayer;
-      // let groupLayer;
-      // if (group === "") {
       this.layerList.operationalItems.forEach(layerListItem => {
         if (layerListItem.title === name) {
           desiredLayer = layerListItem.layer;
         }
       });
-      // } else {
-      //   console.log(group);
-      //   for (const layer of this.map.layers) {
-      //     if (layer.title === group && layer.type === "group") {
-      //       groupLayer = layer;
-      //     }
-      //   }
-      //   for (const layerListItem of groupLayer.layers) {
-      //     if (layerListItem.title === name) {
-      //       desiredLayer = layerListItem.layer;
-      //     }
-      //   }
-      //   console.log(desiredLayer);
-      // }
-
       desiredLayer.visible = !desiredLayer.visible;
     });
 
@@ -668,23 +532,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     }
   }
 
-  runTimer() {
-    this.timeoutHandler = setTimeout(() => {
-      // code to execute continuously until the view is closed
-      // ...
-      //this.animatePointDemo();
-      this.runTimer();
-    }, 200);
-  }
-
-
-  stopTimer() {
-    if (this.timeoutHandler != null) {
-      clearTimeout(this.timeoutHandler);
-      this.timeoutHandler = null;
-    }
-  }
-
   connectFirebase() {
     if (this.isConnected) {
       return;
@@ -728,10 +575,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       points.push(iPoint);
     }
 
-    // if (this.startPoint !== null && this.destinationPoint !== null && this.routeForm.value.name != '') {
-    //   this.fbs.addRouteItem(this.startPoint.latitude, this.startPoint.longitude, this.destinationPoint.latitude, this.destinationPoint.longitude, this.routeForm.value.name, this.authService.userData.uid);
-
-    // }
     if (this.routeForm.value.name != '') {
       this.fbs.addRouteItem(points, this.routeForm.value.name, this.authService.userData.uid);
 
@@ -744,7 +587,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     if (button) {
       button.style.display = 'none';
     }
-    // console.log(this.fbs.getChangeFeedList());
   }
 
   showRouteFromDropdown() {
@@ -772,15 +614,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     points = selectedObject.points;
 
     this.view.graphics.removeAll();
-    // this.sketchWidget.destroy();
-    // this.sketchWidget = new Sketch({
-    //   view: this.view,
-    //   layer: this.graphicsLayer
-    // });
-    // this.view.ui.add(this.sketchWidget, {
-    //   position: "top-right",
-    //   index: 0
-    // });
 
     var esriPoints = points.map(latLong => {
       return new Point({
@@ -816,10 +649,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
         this.startPoint = esriPoints[i];
     }
 
-    //this.startPoint = esriPoints[0];
-    //this.startPoint.longitude = esriPoints[0].longitude;
-    //this.destinationPoint.latitude = esriPoints[0].latitude;
-    // this.destinationPoint.longitude = esriPoints[0].longitude;
     type Review = {
       stars: number;
       text: string;
@@ -1033,39 +862,34 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     button.style.border = '2px solid black';
     button.style.borderRadius = '5px';
 
-    // button.style.transform = 'translate(-50%, -50%)';
-
-    // Add a click event listener for the point
     button.addEventListener('click', () => { this.openModalReview() });
     container.appendChild(button);
+
+    var button1 = document.createElement('button');
+    button1.innerHTML = `<div> Use routing service </div>`;
+    button1.className = 'esri-widget--button esri-widget esri-interactive';
+    // Set width and height using style properties
+    button1.style.width = '150px'; // Set the desired width
+    button1.style.height = '40px'; // Set the desired height
+    button1.style.padding = '5px';
+    button1.style.fontSize = '16px';
+    button1.style.marginTop = '10px';
+    button1.style.marginLeft = '90px';
+    button1.style.color = 'white';
+    button1.style.backgroundColor = 'blue';
+    button1.style.border = '2px solid black';
+    button1.style.borderRadius = '5px';
+    button1.addEventListener('click', () => { this.openModalRouting() });
+    container.appendChild(button1);
     return container;
   }
   routePopup(name: string, reviews: any, dist: number) {
-    console.log("mda " + dist);
-    console.log("Reviews: " + reviews, "Name: " + name);
-    // var button = document.createElement('button');
-    // button.innerHTML = `<div> Add a review </div>`;
-    // button.className = 'esri-widget--button esri-widget esri-interactive';
-    // // Set width and height using style properties
-    // button.style.width = '100px'; // Set the desired width
-    // button.style.height = '40px'; // Set the desired height
-    // button.style.padding = '5px';
-    // button.style.fontSize = '16px';
-    // let htmlCoords = this.view.toScreen(this.startPoint);
-    // button.style.position = 'absolute';
-    // button.style.top = `${htmlCoords.y}px`;
-    // button.style.left = `${htmlCoords.x}px`;
-    // // button.style.transform = 'translate(-50%, -50%)';
-
-    // // Add a click event listener for the point
-    // button.addEventListener('click', () => { this.openModalReview() });
     if (this.eventHandler) {
       this.eventHandler.remove();
       this.eventHandler = null;
     }
     this.eventHandler = this.view.on('pointer-move', (event) => {
       const hoveredPoint = this.view.toMap({ x: event.x, y: event.y });
-      // console.log(this.startPoint.longitude.toFixed(2), hoveredPoint.longitude.toFixed(2), this.startPoint.latitude.toFixed(2), hoveredPoint.latitude.toFixed(2));
       if (this.startPoint.longitude.toFixed(2) == hoveredPoint.longitude.toFixed(2) && this.startPoint.latitude.toFixed(2) == hoveredPoint.latitude.toFixed(2)) {
         this.view.popup.dockEnabled = false;
         this.view.openPopup({
@@ -1073,56 +897,23 @@ export class EsriMapComponent implements OnInit, OnDestroy {
           content: this.createPopupContent(reviews, name, dist),
           location: this.startPoint
         });
-
-        // this.view.ui.add(button);
-        console.log("Name: " + name);
       } else {
         this.view.closePopup();
-        // this.view.ui.remove(button);
-        // this.view.removeHandles();
-        // button.removeEventListener('click', () => { this.openModalReview() });
         this.view.popup.dockEnabled = true;
       }
-      //<button btn btn-primary (click)="openModuleReview()">Add a review</button>
-      // else {
-      //   if (this.destinationPoint.longitude.toFixed(3) == hoveredPoint.longitude.toFixed(3) && this.destinationPoint.latitude.toFixed(3) == hoveredPoint.latitude.toFixed(3))
-      //     this.view.openPopup({
-      //       title: name,
-      //       content: `<div style="max-width: 300px; padding: 20px; border-radius: 10px; background-color: #f5f5f5; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); font-family: 'Arial', sans-serif;">
-      //       <div style="font-size: 20px; font-weight: bold; color: #333; margin-bottom: 15px;">Destination point of ${name}</div>
-      //       <div style="font-weight: bold; margin-bottom: 5px;">Location:
-      //         <div style="margin-left: 20px;">&nbsp;&nbsp;lat: ${this.destinationPoint.latitude.toFixed(3)}</div>
-      //         <div style="margin-left: 20px;">&nbsp;&nbsp;lng: ${this.destinationPoint.longitude.toFixed(3)}</div>
-      //       </div>
-      //       <div style="margin-top: 15px; color: #333;" class="popup-reviews">
-      //         <p style="font-weight: bold; margin-bottom: 5px;">Reviews:</p>
-      //         <ul style="list-style: none; padding: 0;">
-      //           ${reviews.map((review, index) => `
-      //             <li style="margin-bottom: 15px;">
-      //               <span style="font-weight: bold; margin-right: 5px; color: #00897b;">Review ${index + 1}:</span><br>
-      //               <span style="color: #fbc02d; font-weight: bold;">Rating: ${review.stars} stars</span><br>
-      //               <span style="color: #666;">"${review.text}"</span>
-      //             </li>
-      //           `).join('')}
-      //         </ul>
-      //       </div>
-      //     </div>`,
-      //       location: this.destinationPoint
-      //     });
-
-      //   }       else {
-      //     this.view.closePopup();
-      // }
     });
   }
 
   openModalReview() {
     this.matDialog.open(ReviewComponent, {
-      "width": '600px',
-      // "maxHeight": '90vh',
-      // "data": "John",
-      //"autoFocus": false
+      "width": '600px'
+    });
+  }
 
+  openModalRouting() {
+    this.matDialog.open(RoutingServiceComponent, {
+      "width": '1000px',
+      "height": '600px'
     });
   }
 
@@ -1139,10 +930,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
     for (let i = 0; i < userRoutes.length; i++) {
       const newRoute = document.createElement("option");
       const routePoints = {
-        // lat1: userRoutes[i].lat1,
-        // lng1: userRoutes[i].lng1,
-        // lat2: userRoutes[i].lat2,
-        // lng2: userRoutes[i].lng2,
         points: userRoutes[i].points,
         reviews: userRoutes[i].reviews,
         user: userRoutes[i].user
@@ -1201,7 +988,6 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       // The map has been initialized
       console.log("mapView ready: ", this.view.ready);
       this.loaded = this.view.ready;
-      //this.runTimer();
     });
   }
 
@@ -1211,17 +997,12 @@ export class EsriMapComponent implements OnInit, OnDestroy {
       // destroy the map view
       this.view.container = null;
     }
-    // this.stopTimer();
     this.disconnectFirebase();
   }
 
   createRouteForm() {
     this.routeForm = new FormGroup({
-      name: new FormControl('', Validators.required),
-      //password: new FormControl('', Validators.required)
+      name: new FormControl('', Validators.required)
     })
   }
-
 }
-
-

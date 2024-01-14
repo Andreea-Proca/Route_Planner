@@ -32,9 +32,10 @@ import { ReactiveFormsModule } from "@angular/forms";
 import { MaterialModule } from './material-module';
 import { ReviewComponent } from './pages/review/review.component';
 import { FormsModule } from '@angular/forms';
+import { RoutingServiceComponent } from './pages/routing-service/routing-service.component';
 
 @NgModule({
-  declarations: [AppComponent, EsriMapComponent, DashboardComponent, SignInComponent, SignUpComponent, ForgotPasswordComponent, VerifyEmailComponent, ReviewComponent],
+  declarations: [AppComponent, EsriMapComponent, DashboardComponent, SignInComponent, SignUpComponent, ForgotPasswordComponent, VerifyEmailComponent, ReviewComponent, RoutingServiceComponent],
   imports: [
     BrowserModule,
     ReactiveFormsModule,

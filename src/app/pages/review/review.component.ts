@@ -1,7 +1,6 @@
 import { Component, OnInit, Inject } from '@angular/core';
-import { EsriMapComponent } from 'src/app/pages/esri-map/esri-map.component';
-import { FirebaseService, IRouteItem, ITestItem } from "src/app/services/database/firebase";
-import { MAT_DIALOG_DATA } from '@angular/material/dialog'; 
+import { FirebaseService } from "src/app/services/database/firebase";
+import { MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 @Component({
   selector: 'app-review',
@@ -13,7 +12,7 @@ export class ReviewComponent implements OnInit {
   selectedRoute = '';
   rating = 0;
   reviewText = '';
-  routes:  any[];
+  routes: any[];
 
   // Error control
   reviewSuccess = false;
@@ -24,8 +23,6 @@ export class ReviewComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public anyVariable
   ) { }
 
-
-
   onSubmit() {
     const reviewData = {
       stars: this.rating,
@@ -34,8 +31,8 @@ export class ReviewComponent implements OnInit {
     console.log(reviewData);
     this.fbs.addReviewToRoute(this.selectedRoute, reviewData);
     this.reviewSuccess = true;
-    setTimeout( () => this.reviewSuccess = false, 3000);
-}
+    setTimeout(() => this.reviewSuccess = false, 3000);
+  }
 
   updateRating(newRating: number) {
     this.rating = newRating;

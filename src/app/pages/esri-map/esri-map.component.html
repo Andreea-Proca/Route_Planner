@@ -13,10 +13,11 @@
             </mat-list-item> -->
             <mat-divider></mat-divider>
             <mat-list-item>
-                <form [formGroup]="routeForm"  (ngSubmit)="addRouteItem()">
+                <form [formGroup]="routeForm" (ngSubmit)="addRouteItem()">
                     <mat-form-field appearance="fill" style="background-color:cadetblue; color:black">
                         <mat-label>Name of the route</mat-label>
-                        <input matInput formControlName="name" placeholder="Add name of the route" style="color: black;">
+                        <input matInput formControlName="name" placeholder="Add name of the route"
+                            style="color: black;">
                     </mat-form-field>
                 </form>
             </mat-list-item>
@@ -52,10 +53,6 @@
                 <label for="cars" style="color: black;">Choose from your list: </label>
                 <select name="routes" id="userRoutes" (change)="showUserRoutes()">
                 </select>
-            </mat-list-item>
-            <mat-list-item>
-                <button mat-button mat-button color="primary" class="full-w" (click)="drawRouteSteps()"
-                    style="color: white; background-color: #3498db;">Use routing service</button>
             </mat-list-item>
         </mat-list>
     </div>
